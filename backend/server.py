@@ -249,7 +249,7 @@ async def create_blog_post(post_data: BlogPost):
 # Initialize sample data
 @api_router.post("/init-data")
 async def initialize_sample_data():
-    # Sample countries
+    # Sample countries including Gulf countries
     sample_countries = [
         {"name": "Australia", "code": "AU", "flag_url": "https://flagcdn.com/au.svg"},
         {"name": "Canada", "code": "CA", "flag_url": "https://flagcdn.com/ca.svg"},
@@ -259,6 +259,14 @@ async def initialize_sample_data():
         {"name": "Germany", "code": "DE", "flag_url": "https://flagcdn.com/de.svg"},
         {"name": "France", "code": "FR", "flag_url": "https://flagcdn.com/fr.svg"},
         {"name": "Netherlands", "code": "NL", "flag_url": "https://flagcdn.com/nl.svg"},
+        {"name": "United Arab Emirates", "code": "AE", "flag_url": "https://flagcdn.com/ae.svg"},
+        {"name": "Saudi Arabia", "code": "SA", "flag_url": "https://flagcdn.com/sa.svg"},
+        {"name": "Qatar", "code": "QA", "flag_url": "https://flagcdn.com/qa.svg"},
+        {"name": "Kuwait", "code": "KW", "flag_url": "https://flagcdn.com/kw.svg"},
+        {"name": "Bahrain", "code": "BH", "flag_url": "https://flagcdn.com/bh.svg"},
+        {"name": "Oman", "code": "OM", "flag_url": "https://flagcdn.com/om.svg"},
+        {"name": "Singapore", "code": "SG", "flag_url": "https://flagcdn.com/sg.svg"},
+        {"name": "Japan", "code": "JP", "flag_url": "https://flagcdn.com/jp.svg"},
     ]
     
     for country_data in sample_countries:
