@@ -273,7 +273,7 @@ async def initialize_sample_data():
         country = Country(**country_data)
         await db.countries.insert_one(country.dict())
     
-    # Sample opportunities
+    # Sample opportunities including Gulf countries work opportunities
     sample_opportunities = [
         {
             "title": "Software Engineering - Melbourne University",
@@ -313,6 +313,46 @@ async def initialize_sample_data():
             "job_type": "work",
             "requirements": ["Nursing degree", "IELTS 7.0", "Registration required"],
             "salary_range": "NZD 65,000 - 85,000",
+            "duration": "Full-time permanent"
+        },
+        {
+            "title": "Engineering Jobs - Dubai",
+            "description": "Exciting engineering opportunities in Dubai's booming construction and tech sectors.",
+            "country": "United Arab Emirates",
+            "state": "Dubai",
+            "job_type": "work",
+            "requirements": ["Engineering degree", "3+ years experience", "UAE visa processing"],
+            "salary_range": "AED 15,000 - 25,000",
+            "duration": "2-3 year contracts"
+        },
+        {
+            "title": "Healthcare Professionals - Doha",
+            "description": "Various healthcare positions available in Qatar's world-class medical facilities.",
+            "country": "Qatar",
+            "state": "Doha",
+            "job_type": "work",
+            "requirements": ["Medical degree", "Professional license", "Arabic preferred"],
+            "salary_range": "QAR 20,000 - 35,000",
+            "duration": "Full-time permanent"
+        },
+        {
+            "title": "Finance Specialists - Riyadh",
+            "description": "Banking and finance opportunities in Saudi Arabia's expanding financial sector.",
+            "country": "Saudi Arabia",
+            "state": "Riyadh",
+            "job_type": "work",
+            "requirements": ["Finance degree", "CFA preferred", "5+ years experience"],
+            "salary_range": "SAR 18,000 - 30,000",
+            "duration": "Full-time permanent"
+        },
+        {
+            "title": "IT Professionals - Singapore",
+            "description": "Technology roles in Singapore's thriving tech ecosystem.",
+            "country": "Singapore",
+            "state": "Singapore",
+            "job_type": "work",
+            "requirements": ["Computer Science degree", "Programming skills", "Work permit"],
+            "salary_range": "SGD 5,000 - 12,000",
             "duration": "Full-time permanent"
         }
     ]
