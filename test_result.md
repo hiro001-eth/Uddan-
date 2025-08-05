@@ -192,11 +192,10 @@ metadata:
 
 test_plan:
   current_focus:
-    - "API endpoints for opportunities, applications, testimonials"
-    - "Database models and schema design"
     - "Single-page consultancy website with navigation"
     - "Search and filter functionality"
     - "Job application form with modal"
+    - "Professional consultancy UI/UX design"
   stuck_tasks: []
   test_all: false
   test_priority: "high_first"
