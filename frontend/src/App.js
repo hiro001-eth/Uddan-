@@ -65,7 +65,14 @@ function App() {
         axios.get(`${API}/countries`)
       ]);
       
-      setOpportunities(oppResponse.data);
+      const allOpps = oppResponse.data;
+      setAllOpportunities(allOpps);
+      
+      // Paginate initial results
+      const totalPages = Math.ceil(allOpps.length / itemsPerPage);
+      setTotalPages(totalPages);
+      setOpportunities(allOpps.slice(0, itemsPerPage));
+      
       setTestimonials(testimonialResponse.data);
       setPartners(partnerResponse.data);
       setCountries(countryResponse.data);
@@ -76,6 +83,18 @@ function App() {
     }
   };
 
+  // Pagination function
+  const paginateResults = (data, page = 1) => {
+    const startIndex = (page - 1) * itemsPerPage;
+    const endIndex = startIndex + itemsPerPage;
+    const paginatedData = data.slice(startIndex, endIndex);
+    const totalPages = Math.ceil(data.length / itemsPerPage);
+    
+    setOpportunities(paginatedData);
+    setTotalPages(totalPages);
+    setCurrentPage(page);
+  };
+
   const handleSearch = async () => {
     try {
       const params = new URLSearchParams();
@@ -84,9 +103,84 @@ function App() {
       if (searchParams.searchQuery) params.append('search_query', searchParams.searchQuery);
       
       const response = await axios.get(`${API}/opportunities?${params.toString()}`);
-      setOpportunities(response.data);
+      const filteredData = applyFilters(response.data);
+      paginateResults(filteredData, 1);
+      
+      // Auto-scroll to results section
+      setTimeout(() => {
+        const element = document.getElementById('opportunities-section');
+        if (element) {
+          element.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        }
+      }, 300);
+      
     } catch (error) {
       console.error('Error searching opportunities:', error);
+    }
+  };
+
+  const applyFilters = (data) => {
+    let filtered = [...data];
+    
+    // Filter by salary range
+    if (filters.minSalary || filters.maxSalary) {
+      filtered = filtered.filter(opp => {
+        if (!opp.salary_range) return true;
+        const salaryText = opp.salary_range.toLowerCase();
+        const numbers = salaryText.match(/[\d,]+/g);
+        if (numbers && numbers.length > 0) {
+          const salary = parseInt(numbers[0].replace(/,/g, ''));
+          if (filters.minSalary && salary < parseInt(filters.minSalary)) return false;
+          if (filters.maxSalary && salary > parseInt(filters.maxSalary)) return false;
+        }
+        return true;
+      });
+    }
+    
+    // Filter by duration
+    if (filters.duration) {
+      filtered = filtered.filter(opp => 
+        opp.duration && opp.duration.toLowerCase().includes(filters.duration.toLowerCase())
+      );
+    }
+    
+    // Sort results
+    if (filters.sortBy === 'salary_high') {
+      filtered.sort((a, b) => {
+        const getSalary = (opp) => {
+          if (!opp.salary_range) return 0;
+          const numbers = opp.salary_range.match(/[\d,]+/g);
+          return numbers ? parseInt(numbers[0].replace(/,/g, '')) : 0;
+        };
+        return getSalary(b) - getSalary(a);
+      });
+    } else if (filters.sortBy === 'salary_low') {
+      filtered.sort((a, b) => {
+        const getSalary = (opp) => {
+          if (!opp.salary_range) return 0;
+          const numbers = opp.salary_range.match(/[\d,]+/g);
+          return numbers ? parseInt(numbers[0].replace(/,/g, '')) : 0;
+        };
+        return getSalary(a) - getSalary(b);
+      });
+    }
+    
+    return filtered;
+  };
+
+  const handleFilterChange = () => {
+    const filteredData = applyFilters(allOpportunities);
+    paginateResults(filteredData, 1);
+  };
+
+  const handlePageChange = (page) => {
+    const filteredData = applyFilters(allOpportunities);
+    paginateResults(filteredData, page);
+    
+    // Scroll to top of opportunities section
+    const element = document.getElementById('opportunities-section');
+    if (element) {
+      element.scrollIntoView({ behavior: 'smooth', block: 'start' });
     }
   };
 
