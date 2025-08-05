@@ -7,6 +7,7 @@ const API = `${BACKEND_URL}/api`;
 
 function App() {
   const [opportunities, setOpportunities] = useState([]);
+  const [allOpportunities, setAllOpportunities] = useState([]);
   const [testimonials, setTestimonials] = useState([]);
   const [partners, setPartners] = useState([]);
   const [countries, setCountries] = useState([]);
@@ -15,11 +16,23 @@ function App() {
   const [selectedOpportunity, setSelectedOpportunity] = useState(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
   
-  // Search states
+  // Pagination states
+  const [currentPage, setCurrentPage] = useState(1);
+  const [itemsPerPage] = useState(12);
+  const [totalPages, setTotalPages] = useState(1);
+  
+  // Search and filter states
   const [searchParams, setSearchParams] = useState({
     country: '',
     jobType: '',
     searchQuery: ''
+  });
+  
+  const [filters, setFilters] = useState({
+    minSalary: '',
+    maxSalary: '',
+    duration: '',
+    sortBy: 'newest'
   });
   
   // Application form states
