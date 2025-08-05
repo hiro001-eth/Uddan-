@@ -15,6 +15,7 @@ function App() {
   const [showApplicationForm, setShowApplicationForm] = useState(false);
   const [selectedOpportunity, setSelectedOpportunity] = useState(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [showSuccessMessage, setShowSuccessMessage] = useState(false);
   
   // Pagination states
   const [currentPage, setCurrentPage] = useState(1);
@@ -206,9 +207,10 @@ function App() {
         opportunity_id: selectedOpportunity.id
       });
       
-      // Show success animation and message
+      // Show success message in center for 3 seconds
+      setShowSuccessMessage(true);
       setTimeout(() => {
-        alert('🎉 Application submitted successfully! We will contact you soon.');
+        setShowSuccessMessage(false);
         setShowApplicationForm(false);
         setApplicationData({
           applicant_name: '',
@@ -217,7 +219,7 @@ function App() {
           available_countries: []
         });
         setIsSubmitting(false);
-      }, 2000);
+      }, 3000);
       
     } catch (error) {
       console.error('Error submitting application:', error);
@@ -231,6 +233,62 @@ function App() {
     if (element) {
       element.scrollIntoView({ behavior: 'smooth' });
     }
+  };
+
+  const renderPagination = () => {
+    if (totalPages <= 1) return null;
+
+    const pages = [];
+    const maxVisiblePages = 8;
+    let startPage = Math.max(1, currentPage - Math.floor(maxVisiblePages / 2));
+    let endPage = Math.min(totalPages, startPage + maxVisiblePages - 1);
+
+    if (endPage - startPage < maxVisiblePages - 1) {
+      startPage = Math.max(1, endPage - maxVisiblePages + 1);
+    }
+
+    for (let i = startPage; i <= endPage; i++) {
+      pages.push(
+        <button
+          key={i}
+          onClick={() => handlePageChange(i)}
+          className={`px-4 py-2 mx-1 rounded-lg font-semibold transition-colors ${
+            i === currentPage
+              ? 'bg-blue-600 text-white'
+              : 'bg-white text-gray-700 hover:bg-blue-50 border border-gray-300'
+          }`}
+        >
+          {i}
+        </button>
+      );
+    }
+
+    return (
+      <div className="flex justify-center items-center mt-12 space-x-2">
+        {currentPage > 1 && (
+          <button
+            onClick={() => handlePageChange(currentPage - 1)}
+            className="px-4 py-2 bg-white text-gray-700 hover:bg-blue-50 border border-gray-300 rounded-lg font-semibold transition-colors"
+          >
+            Previous
+          </button>
+        )}
+        {pages}
+        {currentPage < totalPages && (
+          <button
+            onClick={() => handlePageChange(currentPage + 1)}
+            className="px-4 py-2 bg-white text-gray-700 hover:bg-blue-50 border border-gray-300 rounded-lg font-semibold transition-colors"
+          >
+            Next
+          </button>
+        )}
+        {endPage < totalPages && (
+          <span className="px-4 py-2 text-gray-500">
+            ...{totalPages}
+          </span>
+        )}
+      </div>
+    );
   };
 
   if (loading) {
@@ -252,7 +310,7 @@ function App() {
           <div className="flex justify-between items-center h-20">
             <div className="flex items-center">
               <div className="text-3xl font-black bg-gradient-to-r from-blue-600 via-purple-600 to-blue-800 bg-clip-text text-transparent">
-                🚀 Uddaan Consultancy
+                Uddaan Consultancy
               </div>
             </div>
             <div className="hidden md:block">
@@ -297,7 +355,7 @@ function App() {
             </span>
           </h1>
           <p className="text-2xl md:text-3xl mb-16 text-blue-100 max-w-4xl mx-auto font-light leading-relaxed">
-            🌟 Transforming Dreams into Reality 🌟<br/>
+            Transforming Dreams into Reality<br/>
             Your Gateway to Global Opportunities
           </p>
           
@@ -310,7 +368,7 @@ function App() {
                   onChange={(e) => setSearchParams({...searchParams, country: e.target.value})}
                   className="w-full px-6 py-4 rounded-2xl text-gray-800 focus:ring-4 focus:ring-blue-300 focus:outline-none text-lg font-semibold bg-white/90 backdrop-blur appearance-none cursor-pointer"
                 >
-                  <option value="">🌍 Select Country</option>
+                  <option value="">Select Country</option>
                   {countries.map(country => (
                     <option key={country.id} value={country.name}>{country.name}</option>
                   ))}
@@ -327,15 +385,15 @@ function App() {
                 onChange={(e) => setSearchParams({...searchParams, jobType: e.target.value})}
                 className="w-full px-6 py-4 rounded-2xl text-gray-800 focus:ring-4 focus:ring-blue-300 focus:outline-none text-lg font-semibold bg-white/90 backdrop-blur appearance-none cursor-pointer"
               >
-                <option value="">🎯 Study or Work</option>
-                <option value="study">📚 Study</option>
-                <option value="work">💼 Work</option>
-                <option value="both">🚀 Both</option>
+                <option value="">Study or Work</option>
+                <option value="study">Study</option>
+                <option value="work">Work</option>
+                <option value="both">Both</option>
               </select>
               
               <input
                 type="text"
-                placeholder="🔍 Search your dream opportunity..."
+                placeholder="Search opportunities..."
                 value={searchParams.searchQuery}
                 onChange={(e) => setSearchParams({...searchParams, searchQuery: e.target.value})}
                 className="w-full px-6 py-4 rounded-2xl text-gray-800 focus:ring-4 focus:ring-blue-300 focus:outline-none text-lg font-semibold bg-white/90 backdrop-blur"
@@ -345,58 +403,133 @@ function App() {
               onClick={handleSearch}
               className="w-full bg-gradient-to-r from-blue-600 via-purple-600 to-blue-800 hover:from-blue-700 hover:via-purple-700 hover:to-blue-900 text-white font-bold py-4 px-8 rounded-2xl transition-all duration-300 text-xl shadow-2xl transform hover:scale-105"
             >
-              Discover Opportunities ✨
+              Search Opportunities
             </button>
           </div>
         </div>
       </section>
 
-      {/* Search Results */}
-      {opportunities.length > 0 && (
-        <section className="py-20 bg-gradient-to-br from-gray-50 to-blue-50">
-          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-            <h2 className="text-4xl font-bold text-center text-gray-900 mb-16">✨ Available Opportunities</h2>
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-              {opportunities.map(opportunity => (
-                <div key={opportunity.id} className="bg-white rounded-2xl shadow-xl overflow-hidden hover:shadow-2xl transition-all duration-300 transform hover:-translate-y-2 border border-gray-100">
-                  <div className="p-8">
-                    <div className="flex items-center justify-between mb-6">
-                      <span className={`px-4 py-2 rounded-full text-sm font-bold ${
-                        opportunity.job_type === 'study' ? 'bg-blue-100 text-blue-800' :
-                        opportunity.job_type === 'work' ? 'bg-green-100 text-green-800' :
-                        'bg-purple-100 text-purple-800'
-                      }`}>
-                        {opportunity.job_type === 'study' ? '🎓 Study' : opportunity.job_type === 'work' ? '💼 Work' : '🎯 Both'}
-                      </span>
-                      <span className="text-sm text-gray-500 font-semibold">{opportunity.country}</span>
-                    </div>
-                    <h3 className="text-xl font-bold text-gray-900 mb-4">{opportunity.title}</h3>
-                    <p className="text-gray-600 mb-6 line-clamp-3">{opportunity.description}</p>
-                    {opportunity.salary_range && (
-                      <p className="text-sm text-blue-600 font-bold mb-2">💰 {opportunity.salary_range}</p>
-                    )}
-                    {opportunity.duration && (
-                      <p className="text-sm text-gray-500 mb-6">⏱️ {opportunity.duration}</p>
-                    )}
-                    <button
-                      onClick={() => handleApply(opportunity)}
-                      className="w-full bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-white font-bold py-3 px-6 rounded-xl transition-all duration-300 transform hover:scale-105"
-                    >
-                      Apply Now 🚀
-                    </button>
-                  </div>
-                </div>
-              ))}
+      {/* Search Results with Filters */}
+      <section id="opportunities-section" className="py-20 bg-gradient-to-br from-gray-50 to-blue-50">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <h2 className="text-4xl font-bold text-center text-gray-900 mb-8">Available Opportunities</h2>
+          
+          {/* Filter Section */}
+          <div className="bg-white rounded-2xl shadow-lg p-6 mb-8">
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4 mb-4">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Min Salary</label>
+                <input
+                  type="number"
+                  placeholder="Min salary"
+                  value={filters.minSalary}
+                  onChange={(e) => setFilters({...filters, minSalary: e.target.value})}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:outline-none"
+                />
+              </div>
+              
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Max Salary</label>
+                <input
+                  type="number"
+                  placeholder="Max salary"
+                  value={filters.maxSalary}
+                  onChange={(e) => setFilters({...filters, maxSalary: e.target.value})}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:outline-none"
+                />
+              </div>
+              
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Duration</label>
+                <select
+                  value={filters.duration}
+                  onChange={(e) => setFilters({...filters, duration: e.target.value})}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:outline-none"
+                >
+                  <option value="">Any Duration</option>
+                  <option value="1 year">1 Year</option>
+                  <option value="2 year">2 Years</option>
+                  <option value="permanent">Permanent</option>
+                  <option value="contract">Contract</option>
+                </select>
+              </div>
+              
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Sort By</label>
+                <select
+                  value={filters.sortBy}
+                  onChange={(e) => setFilters({...filters, sortBy: e.target.value})}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:outline-none"
+                >
+                  <option value="newest">Newest First</option>
+                  <option value="salary_high">Salary: High to Low</option>
+                  <option value="salary_low">Salary: Low to High</option>
+                </select>
+              </div>
+              
+              <div className="flex items-end">
+                <button
+                  onClick={handleFilterChange}
+                  className="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded-lg transition-colors duration-200"
+                >
+                  Apply Filters
+                </button>
+              </div>
             </div>
           </div>
-        </section>
-      )}
+
+          {/* Opportunities Grid */}
+          {opportunities.length > 0 ? (
+            <>
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+                {opportunities.map(opportunity => (
+                  <div key={opportunity.id} className="bg-white rounded-2xl shadow-xl overflow-hidden hover:shadow-2xl transition-all duration-300 transform hover:-translate-y-2 border border-gray-100">
+                    <div className="p-6">
+                      <div className="flex items-center justify-between mb-4">
+                        <span className={`px-3 py-1 rounded-full text-sm font-bold ${
+                          opportunity.job_type === 'study' ? 'bg-blue-100 text-blue-800' :
+                          opportunity.job_type === 'work' ? 'bg-green-100 text-green-800' :
+                          'bg-purple-100 text-purple-800'
+                        }`}>
+                          {opportunity.job_type === 'study' ? 'Study' : opportunity.job_type === 'work' ? 'Work' : 'Both'}
+                        </span>
+                        <span className="text-sm text-gray-500 font-semibold">{opportunity.country}</span>
+                      </div>
+                      <h3 className="text-lg font-bold text-gray-900 mb-3 line-clamp-2">{opportunity.title}</h3>
+                      <p className="text-gray-600 mb-4 line-clamp-3 text-sm">{opportunity.description}</p>
+                      {opportunity.salary_range && (
+                        <p className="text-sm text-blue-600 font-bold mb-2">{opportunity.salary_range}</p>
+                      )}
+                      {opportunity.duration && (
+                        <p className="text-sm text-gray-500 mb-4">{opportunity.duration}</p>
+                      )}
+                      <button
+                        onClick={() => handleApply(opportunity)}
+                        className="w-full bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-white font-bold py-2 px-4 rounded-xl transition-all duration-300 transform hover:scale-105"
+                      >
+                        Apply Now
+                      </button>
+                    </div>
+                  </div>
+                ))}
+              </div>
+
+              {/* Pagination */}
+              {renderPagination()}
+            </>
+          ) : (
+            <div className="text-center py-16">
+              <div className="text-gray-500 text-xl">No opportunities found. Try adjusting your filters.</div>
+            </div>
+          )}
+        </div>
+      </section>
 
       {/* Top Study & Work Destinations */}
       <section id="destinations" className="py-20 bg-white">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="text-center mb-16">
-            <h2 className="text-5xl font-bold text-gray-900 mb-6">🌍 Top Destinations</h2>
+            <h2 className="text-5xl font-bold text-gray-900 mb-6">Top Destinations</h2>
             <p className="text-2xl text-gray-600 max-w-4xl mx-auto">
               It's not about going to a new place, but learning new ways and creating new opportunities.
             </p>
@@ -404,7 +537,7 @@ function App() {
           
           {/* Study Destinations */}
           <div className="mb-16">
-            <h3 className="text-3xl font-bold text-center text-blue-600 mb-12">📚 Study Destinations</h3>
+            <h3 className="text-3xl font-bold text-center text-blue-600 mb-12">Study Destinations</h3>
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
               {[
                 { name: 'Study in Australia', image: 'https://images.unsplash.com/photo-1600633349333-eebb43d01e23?crop=entropy&cs=srgb&fm=jpg&ixid=M3w3NDQ2NDN8MHwxfHNlYXJjaHwxfHxpbnRlcm5hdGlvbmFsfGVufDB8fHxibHVlfDE3NTQzODIyOTV8MA&ixlib=rb-4.1.0&q=85', flag: '🇦🇺' },
@@ -424,10 +557,9 @@ function App() {
                       className="w-full h-56 object-cover group-hover:scale-110 transition-transform duration-500"
                     />
                     <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent group-hover:from-black/80 transition-all duration-300"></div>
-                    <div className="absolute top-4 left-4 text-4xl drop-shadow-lg">{destination.flag}</div>
                     <div className="absolute bottom-4 left-4 right-4">
                       <h3 className="text-white font-bold text-lg group-hover:text-blue-300 transition-colors">
-                        {destination.name}
+                        {destination.name.replace('Study in ', '')}
                       </h3>
                     </div>
                   </div>
@@ -438,7 +570,7 @@ function App() {
 
           {/* Work Destinations */}
           <div>
-            <h3 className="text-3xl font-bold text-center text-green-600 mb-12">💼 Work Destinations</h3>
+            <h3 className="text-3xl font-bold text-center text-green-600 mb-12">Work Destinations</h3>
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
               {[
                 { name: 'Work in Dubai, UAE', image: 'https://images.unsplash.com/photo-1600633349333-eebb43d01e23?crop=entropy&cs=srgb&fm=jpg&ixid=M3w3NDQ2NDN8MHwxfHNlYXJjaHwxfHxpbnRlcm5hdGlvbmFsfGVufDB8fHxibHVlfDE3NTQzODIyOTV8MA&ixlib=rb-4.1.0&q=85', flag: '🇦🇪' },
@@ -458,10 +590,9 @@ function App() {
                       className="w-full h-56 object-cover group-hover:scale-110 transition-transform duration-500"
                     />
                     <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent group-hover:from-black/80 transition-all duration-300"></div>
-                    <div className="absolute top-4 left-4 text-4xl drop-shadow-lg">{destination.flag}</div>
                     <div className="absolute bottom-4 left-4 right-4">
                       <h3 className="text-white font-bold text-lg group-hover:text-green-300 transition-colors">
-                        {destination.name}
+                        {destination.name.replace('Work in ', '')}
                       </h3>
                     </div>
                   </div>
@@ -476,7 +607,7 @@ function App() {
       <section id="services" className="py-20 bg-gradient-to-br from-blue-50 to-indigo-100">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="text-center mb-16">
-            <h2 className="text-4xl font-bold text-gray-900 mb-4">🛠️ Our Support Services</h2>
+            <h2 className="text-4xl font-bold text-gray-900 mb-4">Our Support Services</h2>
             <p className="text-xl text-gray-600 max-w-4xl mx-auto">
               Comprehensive support for your international journey. From application to settlement, we've got you covered.
             </p>
@@ -484,18 +615,17 @@ function App() {
           
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
             {[
-              { title: 'Career Counseling', icon: '🎯', desc: 'Personalized career counseling to help you make informed decisions about your educational and professional pathways.' },
-              { title: 'Course & University Selection', icon: '🏫', desc: 'Expert guidance in choosing the most suitable courses and universities for your career goals.' },
-              { title: 'Test Preparations', icon: '📚', desc: 'Comprehensive preparation for IELTS, TOEFL, GRE, GMAT and other standardized tests.' },
-              { title: 'Visa Guidance', icon: '📄', desc: 'Complete visa application support with high success rates and expert documentation assistance.' },
-              { title: 'Loan & Financial Guidance', icon: '💳', desc: 'Comprehensive support for education loans and financial planning for your studies abroad.' },
-              { title: 'Pre-departure Briefing', icon: '✈️', desc: 'Essential preparation sessions to ensure you are ready for your journey abroad.' },
-              { title: 'Accommodation Support', icon: '🏠', desc: 'Help finding suitable accommodation options in your destination country.' },
-              { title: 'Immigration Services', icon: '🌍', desc: 'Expert immigration advice and support for permanent residency applications.' },
-              { title: 'Spouse & Family Visa', icon: '👨‍👩‍👧‍👦', desc: 'Guidance for family reunification and dependent visa applications.' }
+              { title: 'Career Counseling', desc: 'Personalized career counseling to help you make informed decisions about your educational and professional pathways.' },
+              { title: 'Course & University Selection', desc: 'Expert guidance in choosing the most suitable courses and universities for your career goals.' },
+              { title: 'Test Preparations', desc: 'Comprehensive preparation for IELTS, TOEFL, GRE, GMAT and other standardized tests.' },
+              { title: 'Visa Guidance', desc: 'Complete visa application support with high success rates and expert documentation assistance.' },
+              { title: 'Loan & Financial Guidance', desc: 'Comprehensive support for education loans and financial planning for your studies abroad.' },
+              { title: 'Pre-departure Briefing', desc: 'Essential preparation sessions to ensure you are ready for your journey abroad.' },
+              { title: 'Accommodation Support', desc: 'Help finding suitable accommodation options in your destination country.' },
+              { title: 'Immigration Services', desc: 'Expert immigration advice and support for permanent residency applications.' },
+              { title: 'Spouse & Family Visa', desc: 'Guidance for family reunification and dependent visa applications.' }
             ].map((service, index) => (
               <div key={index} className="bg-white rounded-2xl p-8 shadow-xl hover:shadow-2xl transition-all duration-300 transform hover:-translate-y-2 border border-gray-100">
-                <div className="text-5xl mb-6 text-center">{service.icon}</div>
                 <h3 className="text-xl font-bold text-gray-900 mb-4 text-center">{service.title}</h3>
                 <p className="text-gray-600 text-center leading-relaxed">{service.desc}</p>
               </div>
@@ -507,7 +637,7 @@ function App() {
       {/* Auto-Scrolling Testimonials Section */}
       <section id="testimonials" className="py-20 bg-white overflow-hidden">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 mb-12">
-          <h2 className="text-4xl font-bold text-center text-gray-900 mb-4">💬 Our Testimonials</h2>
+          <h2 className="text-4xl font-bold text-center text-gray-900 mb-4">Our Testimonials</h2>
           <p className="text-xl text-center text-gray-600">What our clients say about us</p>
         </div>
         
@@ -541,7 +671,7 @@ function App() {
       {/* Auto-Scrolling University Partners */}
       <section className="py-20 bg-gradient-to-br from-gray-50 to-blue-50 overflow-hidden">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 mb-12">
-          <h2 className="text-4xl font-bold text-center text-gray-900 mb-4">🏛️ Universities We Partner With</h2>
+          <h2 className="text-4xl font-bold text-center text-gray-900 mb-4">Universities We Partner With</h2>
           <p className="text-xl text-center text-gray-600">Trusted partnerships worldwide</p>
         </div>
         
@@ -567,7 +697,7 @@ function App() {
       {/* Enhanced FAQ Section */}
       <section className="py-20 bg-gradient-to-br from-blue-50 to-indigo-100">
         <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
-          <h2 className="text-4xl font-bold text-center text-gray-900 mb-4">❓ Got Questions?</h2>
+          <h2 className="text-4xl font-bold text-center text-gray-900 mb-4">Got Questions?</h2>
           <p className="text-xl text-center text-gray-600 mb-16">We got the answers</p>
           
           <div className="space-y-6">
@@ -607,7 +737,7 @@ function App() {
         <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 items-center">
             <div>
-              <h2 className="text-4xl font-bold text-gray-900 mb-6">🚀 About Uddaan Consultancy</h2>
+              <h2 className="text-4xl font-bold text-gray-900 mb-6">About Uddaan Consultancy</h2>
               <p className="text-lg text-gray-600 mb-6">
                 Uddaan Consultancy is a team of education professionals dedicated to helping students achieve their dreams of studying and working abroad. 
                 With years of experience and a passion for education, we are committed to providing top-notch service to our clients.
@@ -649,7 +779,7 @@ function App() {
       {/* Contact Section */}
       <section id="contact" className="py-20 bg-gradient-to-br from-gray-900 via-blue-900 to-indigo-900 text-white">
         <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
-          <h2 className="text-4xl font-bold text-center mb-16">📞 Get In Touch</h2>
+          <h2 className="text-4xl font-bold text-center mb-16">Get In Touch</h2>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-12">
             <div>
               <h3 className="text-2xl font-bold mb-6">Contact Information</h3>
@@ -712,7 +842,7 @@ function App() {
                   type="submit"
                   className="w-full bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-white font-bold py-4 px-8 rounded-xl transition-all duration-300 transform hover:scale-105"
                 >
-                  Send Message ✨
+                  Send Message
                 </button>
               </form>
             </div>
@@ -725,12 +855,12 @@ function App() {
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="grid grid-cols-1 md:grid-cols-4 gap-8">
             <div>
-              <div className="text-2xl font-bold text-blue-400 mb-4">🚀 Uddaan Consultancy</div>
+              <div className="text-2xl font-bold text-blue-400 mb-4">Uddaan Consultancy</div>
               <p className="text-gray-300 mb-4">Bridging education and ambition.</p>
               <div className="flex space-x-4">
-                <a href="#" className="text-gray-300 hover:text-white transition-colors">📘 Facebook</a>
-                <a href="#" className="text-gray-300 hover:text-white transition-colors">📷 Instagram</a>
-                <a href="#" className="text-gray-300 hover:text-white transition-colors">📺 YouTube</a>
+                <a href="#" className="text-gray-300 hover:text-white transition-colors">Facebook</a>
+                <a href="#" className="text-gray-300 hover:text-white transition-colors">Instagram</a>
+                <a href="#" className="text-gray-300 hover:text-white transition-colors">YouTube</a>
               </div>
             </div>
             <div>
@@ -772,16 +902,14 @@ function App() {
       {showApplicationForm && selectedOpportunity && (
         <div className="fixed inset-0 bg-black/70 flex items-center justify-center p-4 z-50 backdrop-blur-sm">
           <div className="bg-white rounded-3xl p-10 max-w-2xl w-full max-h-[90vh] overflow-y-auto shadow-2xl border border-gray-200">
-            {isSubmitting ? (
+            {showSuccessMessage ? (
               <div className="text-center py-20">
-                <div className="inline-block relative">
-                  <div className="plane-animation mb-8">
-                    <span className="text-6xl">✈️</span>
-                  </div>
-                  <div className="spinner mb-4"></div>
-                  <h3 className="text-2xl font-bold text-blue-600 mb-2">Taking Off with Your Application!</h3>
-                  <p className="text-gray-600">Please wait while we submit your application...</p>
+                <div className="success-animation mb-8">
+                  <div className="text-6xl mb-4">✅</div>
+                  <div className="text-6xl airplane-success">✈️</div>
                 </div>
+                <h3 className="text-2xl font-bold text-green-600 mb-2">Application Submitted Successfully!</h3>
+                <p className="text-gray-600">We will contact you soon with further details.</p>
               </div>
             ) : (
               <>
@@ -861,9 +989,10 @@ function App() {
                     </button>
                     <button
                       type="submit"
-                      className="flex-1 bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-white font-bold py-4 px-8 rounded-xl transition-all duration-300 transform hover:scale-105"
+                      disabled={isSubmitting}
+                      className="flex-1 bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-white font-bold py-4 px-8 rounded-xl transition-all duration-300 transform hover:scale-105 disabled:opacity-50"
                     >
-                      Submit Application 🚀
+                      {isSubmitting ? 'Submitting...' : 'Submit Application'}
                     </button>
                   </div>
                 </form>
