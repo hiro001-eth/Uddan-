@@ -70,16 +70,23 @@ html {
   animation-delay: 4s;
 }
 
-/* Auto-scrolling testimonials - SLOWED DOWN */
+/* Auto-scrolling testimonials - ULTRA SLOW and SMOOTH */
 .testimonial-scroll {
   width: 100%;
   overflow: hidden;
   position: relative;
-  mask: linear-gradient(
+    -webkit-mask: linear-gradient(
     to right,
     transparent,
-    white 10%,
-    white 90%,
+    white 20%,
+    white 80%,
+    transparent
+  );
+    mask: linear-gradient(
+    to right,
+    transparent,
+    white 20%,
+    white 80%,
     transparent
   );
 }
@@ -87,7 +94,13 @@ html {
 .testimonial-track {
   display: flex;
   width: fit-content;
-  animation: scroll-testimonials 76.8s linear infinite; /* Slowed down by 0.78x: 60s / 0.78 = 76.8s */
+  animation: scroll-testimonials 180s linear infinite; /* Ultra slow: 3 minutes for full cycle */
+  will-change: transform;
+}
+
+.testimonial-scroll:hover .testimonial-track {
+  animation-play-state: paused;
+  transition: all 0.5s ease;
 }
 
 @keyframes scroll-testimonials {
@@ -99,45 +112,47 @@ html {
   }
 }
 
-/* Auto-scrolling university partners - SLOWED DOWN */
-.partner-scroll {
-  width: 100%;
-  overflow: hidden;
-  position: relative;
-  mask: linear-gradient(
-    to right,
-    transparent,
-    white 10%,
-    white 90%,
-    transparent
-  );
-}
-
-.partner-track {
-  display: flex;
-  width: fit-content;
-  animation: scroll-partners 57.6s linear infinite; /* Slowed down by 0.78x: 45s / 0.78 = 57.6s */
-}
-
-@keyframes scroll-partners {
-  0% {
-    transform: translateX(0);
+/* Mobile responsive testimonials */
+@media (max-width: 768px) {
+  .testimonial-scroll {
+    -webkit-mask: linear-gradient(
+      to right,
+      transparent,
+      white 10%,
+      white 90%,
+      transparent
+    );
+    mask: linear-gradient(
+      to right,
+      transparent,
+      white 10%,
+      white 90%,
+      transparent
+    );
   }
-  100% {
-    transform: translateX(-33.33%);
+  
+  .testimonial-track {
+    animation: scroll-testimonials 240s linear infinite; /* Even slower on mobile: 4 minutes */
   }
 }
 
-/* Hover effects for partners */
-.partner-logo {
-  filter: grayscale(80%);
-  transition: all 0.3s ease;
+/* Tablet responsive */
+@media (min-width: 769px) and (max-width: 1024px) {
+  .testimonial-track {
+    animation: scroll-testimonials 200s linear infinite; /* 3.3 minutes on tablet */
+  }
 }
 
-.partner-logo:hover {
-  filter: grayscale(0%);
-  transform: scale(1.05);
+/* Large screen optimizations */
+@media (min-width: 1025px) {
+  .testimonial-track {
+    animation: scroll-testimonials 180s linear infinite; /* 3 minutes on desktop */
+  }
 }
+
+
+
+
 
 /* Success animation for application submission */
 .success-animation {
@@ -441,14 +456,193 @@ html {
 }
 
 .backdrop-blur-custom {
+    -webkit-backdrop-filter: blur(12px);
   backdrop-filter: blur(12px);
-  -webkit-backdrop-filter: blur(12px);
 }
 
 .bg-pattern {
   background-image: 
     radial-gradient(circle at 1px 1px, rgba(59, 130, 246, 0.15) 1px, transparent 0);
   background-size: 20px 20px;
+}
+
+/* Responsive Design System */
+.container-responsive {
+  width: 100%;
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 0 1rem;
+}
+
+@media (min-width: 640px) {
+  .container-responsive {
+    padding: 0 1.5rem;
+  }
+}
+
+@media (min-width: 768px) {
+  .container-responsive {
+    padding: 0 2rem;
+  }
+}
+
+@media (min-width: 1024px) {
+  .container-responsive {
+    padding: 0 2.5rem;
+  }
+}
+
+/* Mobile-first responsive typography */
+.text-responsive-xs {
+  font-size: 0.75rem;
+  line-height: 1rem;
+}
+
+.text-responsive-sm {
+  font-size: 0.875rem;
+  line-height: 1.25rem;
+}
+
+.text-responsive-base {
+  font-size: 1rem;
+  line-height: 1.5rem;
+}
+
+.text-responsive-lg {
+  font-size: 1.125rem;
+  line-height: 1.75rem;
+}
+
+.text-responsive-xl {
+  font-size: 1.25rem;
+  line-height: 1.75rem;
+}
+
+.text-responsive-2xl {
+  font-size: 1.5rem;
+  line-height: 2rem;
+}
+
+.text-responsive-3xl {
+  font-size: 1.875rem;
+  line-height: 2.25rem;
+}
+
+.text-responsive-4xl {
+  font-size: 2.25rem;
+  line-height: 2.5rem;
+}
+
+.text-responsive-5xl {
+  font-size: 3rem;
+  line-height: 1;
+}
+
+@media (min-width: 640px) {
+  .text-responsive-xs { font-size: 0.75rem; }
+  .text-responsive-sm { font-size: 0.875rem; }
+  .text-responsive-base { font-size: 1rem; }
+  .text-responsive-lg { font-size: 1.125rem; }
+  .text-responsive-xl { font-size: 1.25rem; }
+  .text-responsive-2xl { font-size: 1.5rem; }
+  .text-responsive-3xl { font-size: 1.875rem; }
+  .text-responsive-4xl { font-size: 2.25rem; }
+  .text-responsive-5xl { font-size: 3rem; }
+}
+
+@media (min-width: 768px) {
+  .text-responsive-xs { font-size: 0.75rem; }
+  .text-responsive-sm { font-size: 0.875rem; }
+  .text-responsive-base { font-size: 1rem; }
+  .text-responsive-lg { font-size: 1.125rem; }
+  .text-responsive-xl { font-size: 1.25rem; }
+  .text-responsive-2xl { font-size: 1.5rem; }
+  .text-responsive-3xl { font-size: 1.875rem; }
+  .text-responsive-4xl { font-size: 2.25rem; }
+  .text-responsive-5xl { font-size: 3rem; }
+}
+
+@media (min-width: 1024px) {
+  .text-responsive-xs { font-size: 0.75rem; }
+  .text-responsive-sm { font-size: 0.875rem; }
+  .text-responsive-base { font-size: 1rem; }
+  .text-responsive-lg { font-size: 1.125rem; }
+  .text-responsive-xl { font-size: 1.25rem; }
+  .text-responsive-2xl { font-size: 1.5rem; }
+  .text-responsive-3xl { font-size: 1.875rem; }
+  .text-responsive-4xl { font-size: 2.25rem; }
+  .text-responsive-5xl { font-size: 3rem; }
+}
+
+/* Responsive spacing */
+.space-responsive {
+  padding: 1rem;
+  margin: 1rem;
+}
+
+@media (min-width: 640px) {
+  .space-responsive {
+    padding: 1.5rem;
+    margin: 1.5rem;
+  }
+}
+
+@media (min-width: 768px) {
+  .space-responsive {
+    padding: 2rem;
+    margin: 2rem;
+  }
+}
+
+@media (min-width: 1024px) {
+  .space-responsive {
+    padding: 2.5rem;
+    margin: 2.5rem;
+  }
+}
+
+/* Touch-friendly mobile interactions */
+@media (max-width: 768px) {
+  .touch-friendly {
+    min-height: 44px;
+    min-width: 44px;
+  }
+  
+  .touch-friendly-text {
+    font-size: 16px;
+    line-height: 1.5;
+  }
+}
+
+/* Improved mobile navigation */
+.mobile-nav {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.9);
+  z-index: 9999;
+  display: none;
+}
+
+.mobile-nav.active {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+}
+
+.mobile-nav a {
+  color: white;
+  font-size: 1.5rem;
+  margin: 1rem 0;
+  text-decoration: none;
+  transition: color 0.3s ease;
+}
+
+.mobile-nav a:hover {
+  color: #3b82f6;
 }
 
 /* Section dividers */

@@ -137,6 +137,26 @@ class OpportunitySearch(BaseModel):
 async def root():
     return {"message": "Uddaan Consultancy API"}
 
+# AI assistant models
+class ChatRequest(BaseModel):
+    message: str
+
+class ChatResponse(BaseModel):
+    reply: str
+
+@api_router.post('/ai/chat', response_model=ChatResponse)
+async def ai_chat(req: ChatRequest):
+    text = req.message.lower()
+    if 'job' in text or 'vacanc' in text:
+        return ChatResponse(reply='We list Gulf country jobs on our Jobs page. Filter by country like UAE, Qatar, or Saudi Arabia and apply directly. Would you like a link?')
+    if 'consult' in text or 'book' in text:
+        return ChatResponse(reply='You can schedule a 1:1 consultation from the Consultation page. Pick a date and time that works for you!')
+    if 'visa' in text:
+        return ChatResponse(reply='We assist with visa documentation and process guidance after your job application is accepted.')
+    if 'contact' in text or 'support' in text:
+        return ChatResponse(reply='Reach us via the Contact page, phone +977-1-4444444, or email info@uddaanconsultancy.com.')
+    return ChatResponse(reply='I can help with jobs, consultation booking, and visa guidance. What would you like to do?')
+
 # Countries endpoints
 @api_router.get("/countries", response_model=List[Country])
 async def get_countries():
@@ -286,36 +306,6 @@ async def initialize_sample_data():
             "salary_range": "AUD 60,000 - 90,000 post graduation"
         },
         {
-            "title": "Data Scientist Position - Toronto",
-            "description": "Exciting opportunity for Data Scientist role in leading tech company in Toronto.",
-            "country": "Canada",
-            "state": "Ontario",
-            "job_type": "work",
-            "requirements": ["Master's in Computer Science", "3+ years experience", "Python, R, SQL"],
-            "salary_range": "CAD 80,000 - 120,000",
-            "duration": "Full-time permanent"
-        },
-        {
-            "title": "Business Analytics - London School of Economics",
-            "description": "MBA in Business Analytics from prestigious LSE with industry partnerships.",
-            "country": "United Kingdom",
-            "state": "London",
-            "job_type": "study",
-            "requirements": ["Bachelor's degree", "GMAT 650+", "Work experience 2+ years"],
-            "duration": "1 year",
-            "salary_range": "GBP 50,000 - 80,000 post graduation"
-        },
-        {
-            "title": "Nursing Opportunities - Auckland",
-            "description": "Multiple nursing positions available in Auckland's top hospitals.",
-            "country": "New Zealand",
-            "state": "Auckland",
-            "job_type": "work",
-            "requirements": ["Nursing degree", "IELTS 7.0", "Registration required"],
-            "salary_range": "NZD 65,000 - 85,000",
-            "duration": "Full-time permanent"
-        },
-        {
             "title": "Engineering Jobs - Dubai",
             "description": "Exciting engineering opportunities in Dubai's booming construction and tech sectors.",
             "country": "United Arab Emirates",
@@ -325,36 +315,6 @@ async def initialize_sample_data():
             "salary_range": "AED 15,000 - 25,000",
             "duration": "2-3 year contracts"
         },
-        {
-            "title": "Healthcare Professionals - Doha",
-            "description": "Various healthcare positions available in Qatar's world-class medical facilities.",
-            "country": "Qatar",
-            "state": "Doha",
-            "job_type": "work",
-            "requirements": ["Medical degree", "Professional license", "Arabic preferred"],
-            "salary_range": "QAR 20,000 - 35,000",
-            "duration": "Full-time permanent"
-        },
-        {
-            "title": "Finance Specialists - Riyadh",
-            "description": "Banking and finance opportunities in Saudi Arabia's expanding financial sector.",
-            "country": "Saudi Arabia",
-            "state": "Riyadh",
-            "job_type": "work",
-            "requirements": ["Finance degree", "CFA preferred", "5+ years experience"],
-            "salary_range": "SAR 18,000 - 30,000",
-            "duration": "Full-time permanent"
-        },
-        {
-            "title": "IT Professionals - Singapore",
-            "description": "Technology roles in Singapore's thriving tech ecosystem.",
-            "country": "Singapore",
-            "state": "Singapore",
-            "job_type": "work",
-            "requirements": ["Computer Science degree", "Programming skills", "Work permit"],
-            "salary_range": "SGD 5,000 - 12,000",
-            "duration": "Full-time permanent"
-        }
     ]
     
     for opp_data in sample_opportunities:
@@ -366,40 +326,14 @@ async def initialize_sample_data():
         {
             "name": "Prabha Dhital",
             "position": "Visa Success, Canada",
-            "content": "Embarking on my journey to study in Canada, I faced the challenge of finding the right consultancy. Google led me to Uddaan Consultancy, a beacon of guidance. Their personalized approach, expert advice, and seamless process made them the ideal choice.",
+            "content": "Embarking on my journey...",
             "image_url": "https://images.unsplash.com/photo-1494790108755-2616b612681a?w=150&h=150&fit=crop&crop=face"
-        },
-        {
-            "name": "Ved Thapa",
-            "position": "Software Developer, Australia",
-            "content": "I think that in the digital age, information is the driver. Uddaan Consultancy provided me with accurate information and guidance that helped me secure my dream job in Australia.",
-            "image_url": "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=150&h=150&fit=crop&crop=face"
-        },
-        {
-            "name": "Sarah Johnson",
-            "position": "Masters Graduate, UK",
-            "content": "Uddaan Consultancy made my dream of studying in the UK a reality. Their comprehensive support and expertise guided me through every step of the process.",
-            "image_url": "https://images.unsplash.com/photo-1438761681033-6461ffad8d80?w=150&h=150&fit=crop&crop=face"
         }
     ]
     
     for testimonial_data in sample_testimonials:
         testimonial = Testimonial(**testimonial_data)
         await db.testimonials.insert_one(testimonial.dict())
-    
-    # Sample university partners
-    sample_partners = [
-        {"name": "University of Melbourne", "country": "Australia", "logo_url": "https://via.placeholder.com/150x80/0073e6/ffffff?text=UoM"},
-        {"name": "University of Toronto", "country": "Canada", "logo_url": "https://via.placeholder.com/150x80/002a5c/ffffff?text=UofT"},
-        {"name": "London School of Economics", "country": "United Kingdom", "logo_url": "https://via.placeholder.com/150x80/8b0000/ffffff?text=LSE"},
-        {"name": "Stanford University", "country": "United States", "logo_url": "https://via.placeholder.com/150x80/8c1515/ffffff?text=Stanford"},
-        {"name": "University of Auckland", "country": "New Zealand", "logo_url": "https://via.placeholder.com/150x80/003366/ffffff?text=UoA"},
-        {"name": "Technical University Munich", "country": "Germany", "logo_url": "https://via.placeholder.com/150x80/0065bd/ffffff?text=TUM"}
-    ]
-    
-    for partner_data in sample_partners:
-        partner = UniversityPartner(**partner_data)
-        await db.partners.insert_one(partner.dict())
     
     return {"message": "Sample data initialized successfully"}
 

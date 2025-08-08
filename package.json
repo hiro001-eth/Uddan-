@@ -1,0 +1,20 @@
+{
+  "name": "uddaan-consultancy",
+  "version": "1.0.0",
+  "description": "Uddaan Consultancy - Your Gateway to Global Opportunities",
+  "main": "index.js",
+  "scripts": {
+    "dev": "concurrently \"npm run server\" \"npm run client\"",
+    "server": "nodemon backend/server.js",
+    "client": "cd frontend && npm start",
+    "build": "cd frontend && npm run build",
+    "install-all": "npm install && cd frontend && npm install && cd ../backend && npm install"
+  },
+  "keywords": ["education", "consulting", "jobs", "international"],
+  "author": "Uddaan Consultancy",
+  "license": "MIT",
+  "devDependencies": {
+    "concurrently": "^8.2.2",
+    "nodemon": "^3.0.2"
+  }
+} 
