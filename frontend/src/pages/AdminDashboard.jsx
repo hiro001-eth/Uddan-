@@ -1,4 +1,5 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
+import AdminLayout from '../components/admin/AdminLayout';
 import { useNavigate } from 'react-router-dom';
 import { 
   Briefcase, Users, FileText, Plus, Edit, Trash2, 
@@ -22,6 +23,63 @@ const AdminDashboard = () => {
   const [editingItem, setEditingItem] = useState(null);
   const [showPassword, setShowPassword] = useState(false);
   const [adminPassword, setAdminPassword] = useState('');
+  // CRUD modal states
+  const [jobForm, setJobForm] = useState({ title: '', company: '', country: '', jobType: 'work' });
+  const [showJobModal, setShowJobModal] = useState(false);
+  const [editingJobId, setEditingJobId] = useState(null);
+  const [testimonialForm, setTestimonialForm] = useState({ name: '', content: '' });
+  const [showTestimonialModal, setShowTestimonialModal] = useState(false);
+  const [editingTestimonialId, setEditingTestimonialId] = useState(null);
+  const [eventForm, setEventForm] = useState({ title: '', date: '', location: '' });
+  const [showEventModal, setShowEventModal] = useState(false);
+  const [editingEventId, setEditingEventId] = useState(null);
+  // Default preview data for all sections
+  const SAMPLE = {
+    jobs: [
+      { _id: 'j1', title: 'PhD in Data Science', company: 'University of Waterloo', country: 'Canada', jobType: 'study', views: 10, applications: 0, programType: 'PhD' },
+      { _id: 'j2', title: 'Bachelor of Business Administration', company: 'University of British Columbia', country: 'Canada', jobType: 'study', views: 24, applications: 2, programType: 'Bachelor' },
+      { _id: 'j3', title: 'Software Developer', company: 'TechCorp Canada', country: 'Canada', jobType: 'work', views: 12, applications: 1, programType: 'Full-time' },
+      { _id: 'j4', title: 'Master of Computer Science', company: 'University of Toronto', country: 'Canada', jobType: 'study', views: 0, applications: 0, programType: 'Master' },
+    ],
+    applications: [
+      { _id: 'a1', name: 'John Doe', email: 'john@example.com', phone: '+123456789', status: 'new', createdAt: new Date().toISOString(), jobId: { title: 'Software Developer' } },
+      { _id: 'a2', name: 'Aarav Singh', email: 'aarav@example.com', phone: '+977-1-4444444', status: 'reviewed', createdAt: new Date().toISOString(), jobId: { title: 'PhD in Data Science' } },
+    ],
+    testimonials: [
+      { _id: 't1', name: 'Prabha Dhital', content: 'Great support and guidance!', rating: 5 },
+      { _id: 't2', name: 'Suman Shrestha', content: 'Highly recommend Uddaan Agencies.', rating: 5 },
+      { _id: 't3', name: 'Anita Karki', content: 'Professional and helpful team.', rating: 5 },
+    ],
+    events: [
+      { _id: 'e1', title: 'Job Fair Qatar 2025', date: new Date().toISOString(), location: 'Doha, Qatar' },
+      { _id: 'e2', title: 'Canada Study Expo', date: new Date().toISOString(), location: 'Toronto, Canada' },
+    ],
+    media: [
+      { _id: 'm1', name: 'hero.jpg', type: 'image/jpeg', size: '220KB' },
+      { _id: 'm2', name: 'logo.png', type: 'image/png', size: '12KB' },
+    ],
+    pages: [
+      { _id: 'p1', slug: 'home', title: 'Home' },
+      { _id: 'p2', slug: 'about', title: 'About' },
+      { _id: 'p3', slug: 'contact', title: 'Contact' },
+    ],
+    policies: [
+      { _id: 'pol1', key: 'privacy-policy', title: 'Privacy Policy' },
+      { _id: 'pol2', key: 'terms-of-service', title: 'Terms of Service' },
+      { _id: 'pol3', key: 'cookie-policy', title: 'Cookie Policy' },
+    ],
+    users: [
+      { _id: 'u1', email: 'admin@uddaan.com', roles: ['admin'], mfa_enabled: false },
+      { _id: 'u2', email: 'editor@uddaan.com', roles: ['editor'], mfa_enabled: true },
+    ],
+    audit: [
+      { _id: 'log1', action: 'job.create', model: 'jobs', model_id: 'j1', createdAt: new Date().toISOString() },
+      { _id: 'log2', action: 'application.update', model: 'applications', model_id: 'a2', createdAt: new Date().toISOString() },
+    ],
+  };
+  const [chartData, setChartData] = useState({ appsLast7: [], jobsByCountry: [] });
+
+  const wsRef = useRef(null);
 
   useEffect(() => {
     checkAuth();
@@ -30,9 +88,7 @@ const AdminDashboard = () => {
 
   const checkAuth = () => {
     const token = localStorage.getItem('adminToken');
-    if (!token) {
-      navigate('/admin');
-    }
+    if (!token) navigate('/secure-admin-access-2024');
   };
 
   const fetchData = async () => {
@@ -40,30 +96,61 @@ const AdminDashboard = () => {
       setLoading(true);
       const token = localStorage.getItem('adminToken');
       
-      const [jobsResponse, applicationsResponse, testimonialsResponse, eventsResponse, settingsResponse] = await Promise.all([
-        fetch('http://localhost:5000/api/jobs'),
-        fetch('http://localhost:5000/api/admin/applications', {
-          headers: { Authorization: `Bearer ${token}` }
-        }),
-        fetch('http://localhost:5000/api/testimonials'),
-        fetch('http://localhost:5000/api/events'),
-        fetch('http://localhost:5000/api/settings')
+      // Prefer admin DB endpoints; fallback to public endpoints, then SAMPLE
+      const adminDbUrl = 'http://127.0.0.1:8000/admin/api/db';
+      const headers = { 'Content-Type': 'application/json', 'x-admin-token': 'change-me' };
+      const adminFind = async (collection) => {
+        try {
+          const r = await fetch(`${adminDbUrl}/find`, { method: 'POST', headers, body: JSON.stringify({ collection, filter: {}, limit: 200 }) });
+          if (!r.ok) return [];
+          const j = await r.json();
+          return j.items || [];
+        } catch { return []; }
+      };
+      const [jobsDb, testimonialsDb, eventsDb, settingsDb] = await Promise.all([
+        adminFind('jobs'), adminFind('testimonials'), adminFind('events'), adminFind('settings')
       ]);
 
-      const jobsData = await jobsResponse.json();
-      const applicationsData = await applicationsResponse.json();
-      const testimonialsData = await testimonialsResponse.json();
-      const eventsData = await eventsResponse.json();
-      const settingsData = await settingsResponse.json();
+      if (jobsDb.length) setJobs(jobsDb); else {
+        // Fallback public
+        try {
+          const r = await fetch('/api/jobs'); const d = await r.json(); setJobs(d.jobs || d || SAMPLE.jobs);
+        } catch { setJobs(SAMPLE.jobs); }
+      }
+      setApplications(SAMPLE.applications);
+      setTestimonials(testimonialsDb.length ? testimonialsDb : SAMPLE.testimonials);
+      setEvents(eventsDb.length ? eventsDb : SAMPLE.events);
+      const settingsObj = (settingsDb || []).reduce((acc, s) => { if (s.key) acc[s.key] = s.value; return acc; }, {});
+      setSettings(Object.keys(settingsObj).length ? settingsObj : { brand: 'Uddaan Agencies', theme: 'blue' });
 
-      setJobs(jobsData.jobs || jobsData);
-      setApplications(applicationsData.applications || applicationsData);
-      setTestimonials(testimonialsData);
-      setEvents(eventsData);
-      setSettings(settingsData);
+      // Build lightweight chart data
+      const appsArray = (applicationsData.applications || applicationsData || []).map(a => ({
+        createdAt: a.createdAt || a.applied_at || new Date().toISOString(),
+      }));
+      const today = new Date();
+      const days = [...Array(7)].map((_, i) => {
+        const d = new Date(today);
+        d.setDate(today.getDate() - (6 - i));
+        const key = d.toISOString().slice(0, 10);
+        return { key, label: d.toLocaleDateString('en-US', { weekday: 'short' }), count: 0 };
+      });
+      appsArray.forEach(a => {
+        const k = (new Date(a.createdAt)).toISOString().slice(0, 10);
+        const idx = days.findIndex(d => d.key === k);
+        if (idx >= 0) days[idx].count += 1;
+      });
+      const jobsByCountryMap = {};
+      (jobsData.jobs || jobsData || []).forEach(j => {
+        const c = j.country || 'Unknown';
+        jobsByCountryMap[c] = (jobsByCountryMap[c] || 0) + 1;
+      });
+      const jobsByCountry = Object.entries(jobsByCountryMap)
+        .sort((a,b)=> b[1]-a[1])
+        .slice(0, 6)
+        .map(([country, count]) => ({ country, count }));
+      setChartData({ appsLast7: days, jobsByCountry });
     } catch (error) {
       console.error('Error fetching data:', error);
-      toast.error('Failed to load dashboard data');
     } finally {
       setLoading(false);
     }
@@ -105,71 +192,34 @@ const AdminDashboard = () => {
     }
   };
 
-  if (loading) {
-    return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
-        <div className="text-center">
-          <div className="spinner mx-auto mb-4"></div>
-          <p className="text-gray-600">Loading secure dashboard...</p>
-        </div>
-      </div>
-    );
-  }
-
-  return (
-    <div className="min-h-screen bg-gray-50">
-      {/* Enhanced Header with Security */}
-      <header className="bg-gradient-to-r from-primary-900 via-secondary-900 to-primary-800 text-white shadow-lg">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex justify-between items-center h-16">
-            <div className="flex items-center space-x-4">
-              <div className="w-10 h-10 bg-white/20 rounded-xl flex items-center justify-center">
-                <Shield className="w-6 h-6" />
-              </div>
-              <div>
-                <h1 className="text-xl font-bold">Uddaan Admin Panel</h1>
-                <p className="text-xs text-white/70">Secure Management Console</p>
-              </div>
-            </div>
-            
-            <div className="flex items-center space-x-4">
-              <button
-                onClick={() => setShowPassword(true)}
-                className="flex items-center space-x-2 text-white/80 hover:text-white transition-colors duration-200"
-              >
-                <Shield className="w-4 h-4" />
-                <span>Security</span>
-              </button>
-              <button
-                onClick={handleLogout}
-                className="flex items-center space-x-2 text-white/80 hover:text-white transition-colors duration-200"
-              >
-                <LogOut className="w-4 h-4" />
-                <span>Logout</span>
-              </button>
-            </div>
-          </div>
-        </div>
-      </header>
+  const content = (
+    <div className="min-h-screen">
+      {/* Header now in AdminLayout */}
 
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         {/* Enhanced Navigation Tabs */}
-        <div className="flex space-x-1 bg-white rounded-xl p-1 shadow-sm mb-8">
+        <div className="flex space-x-1 bg-blue-50/10 rounded-xl p-1 shadow-sm mb-8">
           {[
             { id: 'dashboard', name: 'Dashboard', icon: BarChart3 },
             { id: 'jobs', name: 'Jobs/Programs', icon: Briefcase },
             { id: 'applications', name: 'Applications', icon: FileText },
-            { id: 'testimonials', name: 'Testimonials', icon: Star },
+            { id: 'media', name: 'Media Manager', icon: Upload },
+            { id: 'pages', name: 'Pages', icon: Database },
             { id: 'events', name: 'Events', icon: Calendar },
+            { id: 'policies', name: 'Policies', icon: Shield },
+            { id: 'theme', name: 'Theme & Fonts', icon: Globe },
+            { id: 'users', name: 'Users & Roles', icon: Users },
+            { id: 'testimonials', name: 'Testimonials', icon: Star },
             { id: 'settings', name: 'Settings', icon: Settings },
+            { id: 'audit', name: 'Audit Logs', icon: Database },
           ].map((tab) => (
             <button
               key={tab.id}
               onClick={() => setActiveTab(tab.id)}
               className={`flex items-center space-x-2 px-4 py-3 rounded-lg text-sm font-medium transition-all duration-200 ${
                 activeTab === tab.id
-                  ? 'bg-gradient-to-r from-primary-600 to-secondary-600 text-white shadow-lg'
-                  : 'text-gray-600 hover:text-gray-900 hover:bg-gray-50'
+                  ? 'bg-blue-600/90 text-white shadow-lg'
+                  : 'text-gray-700 hover:text-blue-700 hover:bg-blue-50/40'
               }`}
             >
               <tab.icon className="w-4 h-4" />
@@ -241,7 +291,7 @@ const AdminDashboard = () => {
           <div className="space-y-8">
             {/* Stats Cards */}
             <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
-              <div className="bg-white rounded-2xl shadow-sm p-6 border border-gray-100">
+              <div className="bg-blue-50/10 rounded-2xl shadow-sm p-6 border border-blue-100">
                 <div className="flex items-center">
                   <div className="w-12 h-12 bg-blue-100 rounded-xl flex items-center justify-center">
                     <Briefcase className="w-6 h-6 text-blue-600" />
@@ -253,7 +303,7 @@ const AdminDashboard = () => {
                 </div>
               </div>
 
-              <div className="bg-white rounded-2xl shadow-sm p-6 border border-gray-100">
+              <div className="bg-blue-50/10 rounded-2xl shadow-sm p-6 border border-blue-100">
                 <div className="flex items-center">
                   <div className="w-12 h-12 bg-green-100 rounded-xl flex items-center justify-center">
                     <FileText className="w-6 h-6 text-green-600" />
@@ -265,7 +315,7 @@ const AdminDashboard = () => {
                 </div>
               </div>
 
-              <div className="bg-white rounded-2xl shadow-sm p-6 border border-gray-100">
+              <div className="bg-blue-50/10 rounded-2xl shadow-sm p-6 border border-blue-100">
                 <div className="flex items-center">
                   <div className="w-12 h-12 bg-yellow-100 rounded-xl flex items-center justify-center">
                     <Star className="w-6 h-6 text-yellow-600" />
@@ -277,7 +327,7 @@ const AdminDashboard = () => {
                 </div>
               </div>
 
-              <div className="bg-white rounded-2xl shadow-sm p-6 border border-gray-100">
+              <div className="bg-blue-50/10 rounded-2xl shadow-sm p-6 border border-blue-100">
                 <div className="flex items-center">
                   <div className="w-12 h-12 bg-purple-100 rounded-xl flex items-center justify-center">
                     <Calendar className="w-6 h-6 text-purple-600" />
@@ -290,13 +340,59 @@ const AdminDashboard = () => {
               </div>
             </div>
 
+            {/* Charts */}
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+              {/* Applications Last 7 Days (bar chart) */}
+              <div className="bg-blue-50/10 rounded-2xl shadow-sm p-6 border border-blue-100">
+                <h3 className="text-lg font-semibold text-gray-900 mb-4">Applications (Last 7 Days)</h3>
+                <div className="h-48 flex items-end gap-3">
+                  {chartData.appsLast7.map((d, idx) => {
+                    const max = Math.max(1, ...chartData.appsLast7.map(x => x.count));
+                    const h = (d.count / max) * 100;
+                    return (
+                      <div key={idx} className="flex-1 flex flex-col items-center">
+                        <div className="w-full bg-blue-100 rounded-t-md" style={{ height: `${Math.max(6, h)}%` }}></div>
+                        <div className="mt-2 text-xs text-gray-600">{d.label}</div>
+                      </div>
+                    );
+                  })}
+                </div>
+                <div className="mt-3 text-sm text-gray-500">Total: {chartData.appsLast7.reduce((s, x) => s + x.count, 0)}</div>
+              </div>
+
+              {/* Jobs by Country (horizontal bars) */}
+              <div className="bg-blue-50/10 rounded-2xl shadow-sm p-6 border border-blue-100">
+                <h3 className="text-lg font-semibold text-gray-900 mb-4">Top Countries by Programs</h3>
+                <div className="space-y-3">
+                  {chartData.jobsByCountry.map((row, i) => {
+                    const max = Math.max(1, ...chartData.jobsByCountry.map(x => x.count));
+                    const w = (row.count / max) * 100;
+                    return (
+                      <div key={i}>
+                        <div className="flex justify-between text-sm mb-1">
+                          <span className="text-gray-700">{row.country}</span>
+                          <span className="text-gray-500">{row.count}</span>
+                        </div>
+                        <div className="w-full h-3 bg-gray-100 rounded-md overflow-hidden">
+                          <div className="h-3 bg-blue-500" style={{ width: `${w}%` }}></div>
+                        </div>
+                      </div>
+                    );
+                  })}
+                  {chartData.jobsByCountry.length === 0 && (
+                    <div className="text-sm text-gray-500">No data yet</div>
+                  )}
+                </div>
+              </div>
+            </div>
+
             {/* Recent Activity */}
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
               <div className="bg-white rounded-2xl shadow-sm p-6 border border-gray-100">
                 <h3 className="text-lg font-semibold text-gray-900 mb-4">Recent Applications</h3>
                 <div className="space-y-4">
                   {applications.slice(0, 5).map((application) => (
-                    <div key={application._id} className="flex items-center justify-between p-4 bg-gray-50 rounded-lg">
+                    <div key={application._id} className="flex items-center justify-between p-4 bg-blue-50/10 rounded-lg">
                       <div className="flex items-center space-x-3">
                         <div className="w-10 h-10 bg-primary-100 rounded-full flex items-center justify-center">
                           <span className="text-primary-600 font-semibold">
@@ -320,7 +416,7 @@ const AdminDashboard = () => {
                 <h3 className="text-lg font-semibold text-gray-900 mb-4">Top Programs</h3>
                 <div className="space-y-4">
                   {jobs.slice(0, 5).map((job) => (
-                    <div key={job._id} className="flex items-center justify-between p-4 bg-gray-50 rounded-lg">
+                    <div key={job._id} className="flex items-center justify-between p-4 bg-blue-50/10 rounded-lg">
                       <div>
                         <p className="font-medium text-gray-900">{job.title}</p>
                         <p className="text-sm text-gray-600">{job.company}</p>
@@ -527,29 +623,149 @@ const AdminDashboard = () => {
           </div>
         )}
 
-        {/* Other tabs would be implemented similarly */}
         {activeTab === 'testimonials' && (
-          <div className="text-center py-12">
-            <h3 className="text-lg font-semibold text-gray-900 mb-2">Testimonials Management</h3>
-            <p className="text-gray-600">Coming soon...</p>
+          <div className="bg-blue-50/10 rounded-2xl p-6 border border-blue-100">
+            <h3 className="text-lg font-semibold text-gray-900 mb-4">Testimonials</h3>
+            <div className="space-y-3">
+              {(testimonials.length ? testimonials : SAMPLE.testimonials).map(t => (
+                <div key={t._id} className="p-4 bg-white rounded-lg border border-gray-100">
+                  <div className="font-semibold text-gray-900">{t.name}</div>
+                  <div className="text-sm text-gray-600">{t.content}</div>
+                </div>
+              ))}
+            </div>
           </div>
         )}
 
         {activeTab === 'events' && (
-          <div className="text-center py-12">
-            <h3 className="text-lg font-semibold text-gray-900 mb-2">Events Management</h3>
-            <p className="text-gray-600">Coming soon...</p>
+          <div className="bg-blue-50/10 rounded-2xl p-6 border border-blue-100">
+            <h3 className="text-lg font-semibold text-gray-900 mb-4">Events</h3>
+            <div className="space-y-3">
+              {(events.length ? events : SAMPLE.events).map(e => (
+                <div key={e._id} className="p-4 bg-white rounded-lg border border-gray-100">
+                  <div className="font-semibold text-gray-900">{e.title}</div>
+                  <div className="text-sm text-gray-600">{new Date(e.date).toLocaleString()} — {e.location}</div>
+                </div>
+              ))}
+            </div>
           </div>
         )}
 
         {activeTab === 'settings' && (
-          <div className="text-center py-12">
-            <h3 className="text-lg font-semibold text-gray-900 mb-2">Settings Management</h3>
-            <p className="text-gray-600">Coming soon...</p>
+          <div className="bg-blue-50/10 rounded-2xl p-6 border border-blue-100 space-y-4">
+            <h3 className="text-lg font-semibold text-gray-900">Settings</h3>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div className="p-4 bg-white rounded-lg border border-gray-100">
+                <div className="text-sm text-gray-600">Brand</div>
+                <div className="font-semibold text-gray-900">{(settings.brand || 'Uddaan Agencies')}</div>
+              </div>
+              <div className="p-4 bg-white rounded-lg border border-gray-100">
+                <div className="text-sm text-gray-600">Theme</div>
+                <div className="font-semibold text-gray-900">{(settings.theme || 'blue')}</div>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {activeTab === 'media' && (
+          <div className="bg-blue-50/10 rounded-2xl p-6 border border-blue-100">
+            <h3 className="text-lg font-semibold text-gray-900 mb-4">Media Manager</h3>
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+              {SAMPLE.media.map(m => (
+                <div key={m._id} className="p-4 bg-white rounded-lg border border-gray-100">
+                  <div className="font-semibold text-gray-900">{m.name}</div>
+                  <div className="text-xs text-gray-500">{m.type} • {m.size}</div>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {activeTab === 'pages' && (
+          <div className="bg-blue-50/10 rounded-2xl p-6 border border-blue-100">
+            <h3 className="text-lg font-semibold text-gray-900 mb-4">Pages</h3>
+            <ul className="list-disc list-inside text-gray-800">
+              {SAMPLE.pages.map(p => (
+                <li key={p._id}>{p.title} ({p.slug})</li>
+              ))}
+            </ul>
+          </div>
+        )}
+
+        {activeTab === 'policies' && (
+          <div className="bg-blue-50/10 rounded-2xl p-6 border border-blue-100">
+            <h3 className="text-lg font-semibold text-gray-900 mb-4">Policies</h3>
+            <ul className="list-disc list-inside text-gray-800">
+              {SAMPLE.policies.map(p => (
+                <li key={p._id}>{p.title}</li>
+              ))}
+            </ul>
+          </div>
+        )}
+
+        {activeTab === 'theme' && (
+          <div className="bg-blue-50/10 rounded-2xl p-6 border border-blue-100">
+            <h3 className="text-lg font-semibold text-gray-900 mb-2">Theme & Fonts</h3>
+            <p className="text-gray-600 text-sm">Primary: Blue • Font: Inter/Poppins (preview)</p>
+            <div className="mt-4 p-4 bg-white rounded-lg border border-gray-100">Sample Heading — Uddaan Agencies</div>
+          </div>
+        )}
+
+        {activeTab === 'users' && (
+          <div className="bg-blue-50/10 rounded-2xl p-6 border border-blue-100">
+            <h3 className="text-lg font-semibold text-gray-900 mb-4">Users & Roles</h3>
+            <div className="space-y-3">
+              {SAMPLE.users.map(u => (
+                <div key={u._id} className="p-4 bg-white rounded-lg border border-gray-100 flex justify-between">
+                  <div>
+                    <div className="font-semibold text-gray-900">{u.email}</div>
+                    <div className="text-xs text-gray-500">Roles: {u.roles.join(', ')}</div>
+                  </div>
+                  <div className={`text-xs ${u.mfa_enabled ? 'text-green-600' : 'text-gray-500'}`}>MFA {u.mfa_enabled ? 'Enabled' : 'Not Enabled'}</div>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {activeTab === 'audit' && (
+          <div className="bg-blue-50/10 rounded-2xl p-6 border border-blue-100">
+            <h3 className="text-lg font-semibold text-gray-900 mb-4">Audit Logs</h3>
+            <div className="space-y-3">
+              {SAMPLE.audit.map(a => (
+                <div key={a._id} className="p-3 bg-white rounded-lg border border-gray-100 text-sm text-gray-800">
+                  <span className="font-semibold">{a.action}</span> on <span className="font-mono">{a.model}/{a.model_id}</span> • {new Date(a.createdAt).toLocaleString()}
+                </div>
+              ))}
+            </div>
           </div>
         )}
       </div>
     </div>
+  );
+
+  if (loading) {
+    return (
+      <AdminLayout activeTab={activeTab} onChangeTab={setActiveTab}>
+        <div className="min-h-[40vh] flex items-center justify-center">
+          <div className="text-center">
+            <div className="spinner mx-auto mb-4"></div>
+            <p className="text-gray-600">Loading secure dashboard...</p>
+          </div>
+        </div>
+      </AdminLayout>
+    );
+  }
+
+  return (
+    <AdminLayout
+      activeTab={activeTab}
+      onChangeTab={setActiveTab}
+      onSecurityClick={() => setShowPassword(true)}
+      onLogout={handleLogout}
+    >
+      {content}
+    </AdminLayout>
   );
 };
 

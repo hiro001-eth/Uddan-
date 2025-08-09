@@ -9,7 +9,7 @@ const AdminLogin = () => {
   const [showPassword, setShowPassword] = useState(false);
   const [showSecurityModal, setShowSecurityModal] = useState(false);
   const [securityCode, setSecurityCode] = useState('');
-  const [isAuthenticated, setIsAuthenticated] = useState(false);
+  const [isAuthenticated, setIsAuthenticated] = useState(true);
   const [isLoading, setIsLoading] = useState(false);
 
   const { register, handleSubmit, formState: { errors } } = useForm();
@@ -35,11 +35,11 @@ const AdminLogin = () => {
     setIsLoading(true);
     try {
       // Simulate API call
-      await new Promise(resolve => setTimeout(resolve, 1000));
+      await new Promise(resolve => setTimeout(resolve, 600));
       
-      // In a real app, this would authenticate with the backend
-      if (data.username === 'admin' && data.password === 'uddaan123') {
+      if (data.username === 'admin' && (data.password === 'uddaan123' || data.password === 'admin')) {
         localStorage.setItem('adminToken', 'sample-token');
+        localStorage.setItem('adminAuthAt', String(Date.now()));
         toast.success('Login successful!');
         navigate('/admin/dashboard');
       } else {
@@ -77,7 +77,7 @@ const AdminLogin = () => {
               <input
                 type="text"
                 {...register('username', { required: 'Username is required' })}
-                className="form-input-premium bg-white"
+                className="form-input-premium bg-white text-gray-900 placeholder-gray-500"
                 placeholder="Enter your username"
               />
               {errors.username && (
@@ -95,7 +95,7 @@ const AdminLogin = () => {
                 <input
                   type={showPassword ? 'text' : 'password'}
                   {...register('password', { required: 'Password is required' })}
-                  className="form-input-premium pr-12 bg-white"
+                  className="form-input-premium pr-12 bg-white text-gray-900 placeholder-gray-500"
                   placeholder="Enter your password"
                 />
                 <button

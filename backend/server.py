@@ -1,4 +1,4 @@
-from fastapi import FastAPI, APIRouter, HTTPException
+from fastapi import FastAPI, APIRouter, HTTPException, Request, WebSocket, WebSocketDisconnect
 from dotenv import load_dotenv
 from starlette.middleware.cors import CORSMiddleware
 from motor.motor_asyncio import AsyncIOMotorClient
@@ -6,8 +6,9 @@ import os
 import logging
 from pathlib import Path
 from pydantic import BaseModel, Field
-from typing import List, Optional
+from typing import List, Optional, Dict, Any, Tuple
 import uuid
+import time
 from datetime import datetime
 from enum import Enum
 
@@ -44,6 +45,43 @@ class ApplicationStatus(str, Enum):
     ACCEPTED = "accepted"
     REJECTED = "rejected"
 
+
+# ------------------------------
+# Realtime (WebSocket) hub
+# ------------------------------
+active_admin_clients: List[WebSocket] = []
+
+
+async def broadcast_to_admins(event: str, payload: Dict[str, Any]) -> None:
+    stale_clients: List[WebSocket] = []
+    message = {"event": event, "data": payload}
+    for ws in active_admin_clients:
+        try:
+            await ws.send_json(message)
+        except Exception:
+            stale_clients.append(ws)
+    for ws in stale_clients:
+        try:
+            active_admin_clients.remove(ws)
+        except ValueError:
+            pass
+
+
+@app.websocket("/admin/ws")
+async def admin_ws(websocket: WebSocket):
+    await websocket.accept()
+    active_admin_clients.append(websocket)
+    try:
+        # Keep alive; echo pings
+        while True:
+            _ = await websocket.receive_text()
+            await websocket.send_text("ok")
+    except WebSocketDisconnect:
+        pass
+    finally:
+        if websocket in active_admin_clients:
+            active_admin_clients.remove(websocket)
+
 class Country(BaseModel):
     id: str = Field(default_factory=lambda: str(uuid.uuid4()))
     name: str
@@ -76,6 +114,74 @@ class JobApplication(BaseModel):
     cover_letter: Optional[str] = None
     status: ApplicationStatus = ApplicationStatus.PENDING
     applied_at: datetime = Field(default_factory=datetime.utcnow)
+
+
+# ------------------------------
+# Jobs and Applications (public API)
+# ------------------------------
+
+class JobPublic(BaseModel):
+    id: str = Field(default_factory=lambda: str(uuid.uuid4()))
+    title: str
+    country: str
+    city: Optional[str] = None
+    job_type: str
+    description: Optional[str] = None
+    requirements: List[str] = []
+    company: Optional[Dict[str, Any]] = None
+    featured: bool = False
+    status: str = "active"
+    created_at: datetime = Field(default_factory=datetime.utcnow)
+
+
+class ApplicationPublicCreate(BaseModel):
+    name: str
+    email: str
+    phone: str
+    cover_letter: Optional[str] = None
+    resume_media_id: Optional[str] = None
+
+
+@api_router.get("/jobs", response_model=List[JobPublic])
+async def get_jobs(country: Optional[str] = None, job_type: Optional[str] = None, q: Optional[str] = None):
+    query: Dict[str, Any] = {"status": "active"}
+    if country:
+        query["country"] = country
+    if job_type:
+        query["job_type"] = job_type
+    if q:
+        query["$or"] = [
+            {"title": {"$regex": q, "$options": "i"}},
+            {"description": {"$regex": q, "$options": "i"}},
+            {"company.name": {"$regex": q, "$options": "i"}},
+        ]
+    docs = await db.jobs.find(query).sort([("featured", -1), ("created_at", -1)]).to_list(100)
+    return [JobPublic(**{**d, "id": d.get("id", d.get("_id", ""))}) for d in docs]
+
+
+@api_router.get("/jobs/{job_id}", response_model=JobPublic)
+async def get_job(job_id: str):
+    doc = await db.jobs.find_one({"id": job_id})
+    if not doc:
+        raise HTTPException(status_code=404, detail="Job not found")
+    return JobPublic(**{**doc, "id": doc.get("id", job_id)})
+
+
+# Simple in-memory rate limiter per IP and key
+_rate_state: Dict[Tuple[str, str], List[float]] = {}
+
+
+def rate_limit(request: Request, key: str, limit: int = 10, window_seconds: int = 60) -> None:
+    now = time.monotonic()
+    ip = request.client.host if request.client else "unknown"
+    rk = (key, ip)
+    bucket = _rate_state.get(rk, [])
+    # drop old
+    bucket = [t for t in bucket if now - t <= window_seconds]
+    if len(bucket) >= limit:
+        raise HTTPException(status_code=429, detail="Too many requests, slow down")
+    bucket.append(now)
+    _rate_state[rk] = bucket
 
 class Testimonial(BaseModel):
     id: str = Field(default_factory=lambda: str(uuid.uuid4()))
@@ -205,14 +311,12 @@ async def get_opportunity(opportunity_id: str):
         raise HTTPException(status_code=404, detail="Opportunity not found")
     return Opportunity(**opportunity)
 
-# Applications endpoints
+# Applications endpoints (legacy for opportunities)
 @api_router.post("/applications", response_model=JobApplication)
 async def create_application(application_data: ApplicationCreate):
-    # Check if opportunity exists
     opportunity = await db.opportunities.find_one({"id": application_data.opportunity_id})
     if not opportunity:
         raise HTTPException(status_code=404, detail="Opportunity not found")
-    
     application_dict = application_data.dict()
     application = JobApplication(**application_dict)
     await db.applications.insert_one(application.dict())
@@ -229,6 +333,91 @@ async def get_application(application_id: str):
     if not application:
         raise HTTPException(status_code=404, detail="Application not found")
     return JobApplication(**application)
+
+
+# Public apply endpoint for jobs
+@api_router.post("/jobs/{job_id}/apply")
+async def apply_to_job(job_id: str, payload: ApplicationPublicCreate, request: Request):
+    rate_limit(request, key="apply", limit=5, window_seconds=60)
+    job = await db.jobs.find_one({"id": job_id, "status": {"$ne": "closed"}})
+    if not job:
+        raise HTTPException(status_code=404, detail="Job not found or closed")
+    app_doc = {
+        "job_id": job_id,
+        "candidate": {
+            "name": payload.name,
+            "email": payload.email,
+            "phone": payload.phone,
+        },
+        "resume_media_id": payload.resume_media_id,
+        "cover_letter": payload.cover_letter,
+        "status": "applied",
+        "applied_at": datetime.utcnow(),
+        "notes": [],
+    }
+    await db.applications.insert_one(app_doc)
+    # emit realtime event for admin
+    safe_payload = {
+        "job_id": job_id,
+        "candidate": {"name": payload.name, "email": payload.email, "phone": payload.phone},
+        "applied_at": app_doc["applied_at"].isoformat() + "Z",
+        "status": "applied",
+    }
+    await broadcast_to_admins("application:new", safe_payload)
+    return {"ok": True}
+
+
+# ------------------------------
+# Media presign upload (S3/MinIO)
+# ------------------------------
+import boto3
+
+
+def get_s3_client():
+    endpoint_url = os.getenv("S3_ENDPOINT_URL")
+    region = os.getenv("S3_REGION", "us-east-1")
+    return boto3.client(
+        "s3",
+        endpoint_url=endpoint_url if endpoint_url else None,
+        region_name=region,
+        aws_access_key_id=os.getenv("AWS_ACCESS_KEY_ID"),
+        aws_secret_access_key=os.getenv("AWS_SECRET_ACCESS_KEY"),
+        config=boto3.session.Config(signature_version="s3v4"),
+    )
+
+
+@api_router.post("/media/presign-upload")
+async def presign_upload(request: Request, filename: str, mime: str, size: Optional[int] = None, purpose: Optional[str] = None):
+    rate_limit(request, key="presign", limit=10, window_seconds=60)
+    bucket = os.getenv("S3_BUCKET")
+    if not bucket:
+        raise HTTPException(status_code=500, detail="S3 bucket not configured")
+    s3 = get_s3_client()
+    # create media record first
+    media_id = str(uuid.uuid4())
+    key = f"uploads/{media_id}/{filename}"
+    path = f"s3://{bucket}/{key}"
+    media_doc = {
+        "_id": media_id,
+        "path": path,
+        "mime": mime,
+        "size": size,
+        "sensitive": True if purpose == "resume" else False,
+        "storage_backend": "s3",
+        "created_at": datetime.utcnow(),
+    }
+    await db.media.insert_one(media_doc)
+    try:
+        url = s3.generate_presigned_url(
+            ClientMethod="put_object",
+            Params={"Bucket": bucket, "Key": key, "ContentType": mime},
+            ExpiresIn=900,  # 15 minutes
+        )
+    except Exception as e:
+        # cleanup media doc if presign fails
+        await db.media.delete_one({"_id": media_id})
+        raise HTTPException(status_code=500, detail=f"Failed to create presigned URL: {e}")
+    return {"upload_url": url, "media_id": media_id, "path": path}
 
 # Testimonials endpoints
 @api_router.get("/testimonials", response_model=List[Testimonial])
@@ -336,6 +525,110 @@ async def initialize_sample_data():
         await db.testimonials.insert_one(testimonial.dict())
     
     return {"message": "Sample data initialized successfully"}
+
+
+async def ensure_indexes_and_validators() -> None:
+    # Indexes for jobs
+    try:
+        await db.jobs.create_index("id", unique=True)
+        await db.jobs.create_index([("country", 1), ("job_type", 1), ("status", 1), ("featured", -1)])
+        await db.jobs.create_index([("title", "text"), ("description", "text"), ("company.name", "text")])
+    except Exception as e:
+        logger.warning(f"jobs index creation issue: {e}")
+
+    # Indexes for applications
+    try:
+        await db.applications.create_index([("job_id", 1), ("status", 1)])
+        await db.applications.create_index([("candidate.name", "text"), ("candidate.email", "text")])
+    except Exception as e:
+        logger.warning(f"applications index creation issue: {e}")
+
+    # Best-effort validators (collMod may require privileges)
+    jobs_validator = {
+        "$jsonSchema": {
+            "bsonType": "object",
+            "required": ["title", "country", "status", "created_at"],
+            "properties": {
+                "title": {"bsonType": "string"},
+                "slug": {"bsonType": "string"},
+                "company": {
+                    "bsonType": "object",
+                    "properties": {
+                        "name": {"bsonType": "string"},
+                        "logo_media_id": {"bsonType": "string"},
+                    },
+                },
+                "country": {"bsonType": "string"},
+                "city": {"bsonType": "string"},
+                "job_type": {"enum": ["full-time", "part-time", "contract", "temporary", "work", "study", "both"]},
+                "salary": {
+                    "bsonType": "object",
+                    "properties": {
+                        "min": {"bsonType": ["int", "long", "double"]},
+                        "max": {"bsonType": ["int", "long", "double"]},
+                        "currency": {"bsonType": "string"},
+                    },
+                },
+                "description": {"bsonType": "string"},
+                "requirements": {"bsonType": "array", "items": {"bsonType": "string"}},
+                "featured": {"bsonType": "bool"},
+                "status": {"enum": ["draft", "active", "closed"]},
+                "created_at": {"bsonType": "date"},
+            },
+        }
+    }
+    applications_validator = {
+        "$jsonSchema": {
+            "bsonType": "object",
+            "required": ["job_id", "candidate", "applied_at"],
+            "properties": {
+                "job_id": {"bsonType": "string"},
+                "candidate": {
+                    "bsonType": "object",
+                    "required": ["name", "email", "phone"],
+                    "properties": {
+                        "name": {"bsonType": "string"},
+                        "email": {"bsonType": "string"},
+                        "phone": {"bsonType": "string"},
+                    },
+                },
+                "resume_media_id": {"bsonType": "string"},
+                "cover_letter": {"bsonType": "string"},
+                "status": {"enum": ["applied", "screening", "interview", "offered", "rejected"]},
+                "notes": {"bsonType": "array"},
+                "applied_at": {"bsonType": "date"},
+            },
+        }
+    }
+    try:
+        await db.create_collection("jobs")
+    except Exception:
+        pass
+    try:
+        await db.command({
+            "collMod": "jobs",
+            "validator": jobs_validator,
+            "validationLevel": "moderate",
+        })
+    except Exception as e:
+        logger.warning(f"jobs validator issue: {e}")
+    try:
+        await db.create_collection("applications")
+    except Exception:
+        pass
+    try:
+        await db.command({
+            "collMod": "applications",
+            "validator": applications_validator,
+            "validationLevel": "moderate",
+        })
+    except Exception as e:
+        logger.warning(f"applications validator issue: {e}")
+
+
+@app.on_event("startup")
+async def on_startup():
+    await ensure_indexes_and_validators()
 
 # Include the router in the main app
 app.include_router(api_router)

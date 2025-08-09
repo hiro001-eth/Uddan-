@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { BrowserRouter as Router, Routes, Route, useLocation } from 'react-router-dom';
+import { BrowserRouter as Router, Routes, Route, useLocation, Navigate } from 'react-router-dom';
 import { Toaster } from 'react-hot-toast';
 import { ChevronUp } from 'lucide-react';
 
@@ -58,12 +58,28 @@ function App() {
   };
 
   const isHome = location.pathname === '/';
+  const isAdminRoute = location.pathname.startsWith('/admin') || location.pathname.startsWith('/secure-admin-access-2024');
+
+  const RequireAdmin = ({ children }) => {
+    let token = null;
+    let authAt = 0;
+    try {
+      token = localStorage.getItem('adminToken');
+      authAt = parseInt(localStorage.getItem('adminAuthAt') || '0', 10);
+    } catch {}
+    // Require a fresh auth within the last 60 minutes
+    const now = Date.now();
+    const maxAgeMs = 60 * 60 * 1000; // 60 minutes
+    const isFresh = authAt && now - authAt < maxAgeMs;
+    if (!token || !isFresh) return <Navigate to="/secure-admin-access-2024" replace />;
+    return children;
+  };
 
   return (
     <>
       <ScrollToTop />
       <div className="min-h-screen bg-gray-50">
-        <Header />
+        {!isAdminRoute && <Header />}
         
         <main>
           <Routes>
@@ -81,17 +97,17 @@ function App() {
             <Route path="/terms-of-service" element={<TermsOfService />} />
             <Route path="/cookie-policy" element={<CookiePolicy />} />
             <Route path="/secure-admin-access-2024" element={<AdminLogin />} />
-            <Route path="/admin/dashboard" element={<AdminDashboard />} />
+            <Route path="/admin/dashboard" element={<RequireAdmin><AdminDashboard /></RequireAdmin>} />
           </Routes>
         </main>
 
-        <Footer />
+        {!isAdminRoute && <Footer />}
 
         {/* Floating 3D Airplane on Home only */}
-        {isHome && <FloatingAirplane />}
+        {!isAdminRoute && isHome && <FloatingAirplane />}
 
         {/* 3D Scroll to Top Button */}
-        {showScrollButton && (
+        {!isAdminRoute && showScrollButton && (
           <button
             onClick={scrollToTop}
             className="scroll-button-3d"
@@ -101,8 +117,8 @@ function App() {
           </button>
         )}
 
-        {/* Chat Assistant */}
-        <ChatAssistant />
+        {/* Chat Assistant disabled on admin */}
+        {!isAdminRoute && <ChatAssistant />}
 
         <Toaster 
           position="top-right"

@@ -10,6 +10,26 @@
   box-sizing: border-box;
 }
 
+/* Responsive base fixes */
+html, body {
+  margin: 0;
+  padding: 0;
+  min-height: 100%;
+  overflow-x: hidden; /* prevent accidental horizontal scroll; fix root causes too */
+}
+
+/* Media should not overflow */
+img, video, canvas, svg {
+  max-width: 100%;
+  height: auto;
+}
+
+/* Long strings should wrap to avoid overflow */
+.break-words, .address, .job-title, .content-wrap {
+  overflow-wrap: anywhere;
+  word-break: break-word;
+}
+
 /* Custom scrollbar */
 ::-webkit-scrollbar {
   width: 8px;
@@ -154,13 +174,24 @@
 
 /* 3D Scroll Button */
 .scroll-button-3d {
-  @apply fixed bottom-8 right-8 w-14 h-14 bg-gradient-to-br from-blue-600 to-purple-600 rounded-full shadow-2xl flex items-center justify-center text-white cursor-pointer transition-all duration-300 transform hover:scale-110 hover:shadow-2xl z-50;
+  @apply fixed w-14 h-14 bg-gradient-to-br from-blue-600 to-purple-600 rounded-full shadow-2xl flex items-center justify-center text-white cursor-pointer transition-all duration-300 transform hover:scale-110 hover:shadow-2xl z-50;
+  right: 1rem;
+  bottom: calc(1rem + env(safe-area-inset-bottom));
   box-shadow: 0 10px 30px rgba(59, 130, 246, 0.3);
 }
 
 .scroll-button-3d:hover {
   box-shadow: 0 15px 40px rgba(59, 130, 246, 0.5);
   transform: translateY(-2px) scale(1.1);
+}
+
+@media (max-width: 480px) {
+  .scroll-button-3d {
+    right: 0.75rem;
+    bottom: calc(0.75rem + env(safe-area-inset-bottom));
+    width: 44px;
+    height: 44px;
+  }
 }
 
 /* Premium Button Styles */

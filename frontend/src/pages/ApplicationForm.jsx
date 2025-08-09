@@ -38,19 +38,24 @@ const ApplicationForm = () => {
   const onSubmit = async (data) => {
     setIsSubmitting(true);
     try {
-      // Simulate API call
-      await new Promise(resolve => setTimeout(resolve, 2000));
-      
-      // In a real app, this would send data to the backend
-      console.log('Application submitted:', {
-        jobId,
-        ...data
+      const res = await fetch(`/api/jobs/${jobId}/apply`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          name: data.name,
+          email: data.email,
+          phone: data.phone,
+          cover_letter: data.additionalInfo || ''
+        })
       });
-      
+      if (!res.ok) {
+        const err = await res.json().catch(() => ({}));
+        throw new Error(err.detail || 'Submit failed');
+      }
       setIsSubmitted(true);
-      toast.success('Application submitted successfully! We will contact you soon.');
+      toast.success('Application submitted successfully!');
     } catch (error) {
-      toast.error('Failed to submit application. Please try again.');
+      toast.error(error.message || 'Failed to submit application. Please try again.');
     } finally {
       setIsSubmitting(false);
     }
