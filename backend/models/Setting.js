@@ -1,3 +1,4 @@
+
 const mongoose = require('mongoose');
 
 const settingSchema = new mongoose.Schema({
@@ -13,14 +14,23 @@ const settingSchema = new mongoose.Schema({
   },
   category: {
     type: String,
-    enum: ['seo', 'contact', 'social', 'company', 'features', 'security'],
-    default: 'company'
+    trim: true,
+    default: 'general'
   },
   description: {
     type: String,
     trim: true
   },
+  dataType: {
+    type: String,
+    enum: ['string', 'number', 'boolean', 'object', 'array'],
+    default: 'string'
+  },
   isPublic: {
+    type: Boolean,
+    default: false
+  },
+  isEditable: {
     type: Boolean,
     default: true
   }
@@ -28,4 +38,9 @@ const settingSchema = new mongoose.Schema({
   timestamps: true
 });
 
-module.exports = mongoose.model('Setting', settingSchema); 
+// Index for better query performance
+settingSchema.index({ key: 1 });
+settingSchema.index({ category: 1 });
+settingSchema.index({ isPublic: 1 });
+
+module.exports = mongoose.model('Setting', settingSchema);

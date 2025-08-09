@@ -1,3 +1,4 @@
+
 const mongoose = require('mongoose');
 
 const applicationSchema = new mongoose.Schema({
@@ -22,26 +23,59 @@ const applicationSchema = new mongoose.Schema({
     required: true,
     trim: true
   },
-  resume: {
-    type: String,
-    required: true
-  },
   coverLetter: {
     type: String,
-    required: false,
+    trim: true
+  },
+  resume: {
+    type: String,
     trim: true
   },
   status: {
     type: String,
-    enum: ['new', 'reviewed', 'contacted', 'accepted', 'rejected'],
+    enum: ['new', 'reviewed', 'contacted', 'interview', 'accepted', 'rejected'],
     default: 'new'
   },
-  adminNotes: {
+  notes: [{
+    content: String,
+    addedBy: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: 'Admin'
+    },
+    addedAt: {
+      type: Date,
+      default: Date.now
+    }
+  }],
+  ipAddress: {
+    type: String
+  },
+  userAgent: {
+    type: String
+  },
+  source: {
+    type: String,
+    default: 'website'
+  },
+  priority: {
+    type: String,
+    enum: ['low', 'medium', 'high'],
+    default: 'medium'
+  },
+  followUpDate: {
+    type: Date
+  },
+  tags: [{
     type: String,
     trim: true
-  }
+  }]
 }, {
   timestamps: true
 });
 
-module.exports = mongoose.model('Application', applicationSchema); 
+// Indexes for better query performance
+applicationSchema.index({ jobId: 1, status: 1 });
+applicationSchema.index({ email: 1 });
+applicationSchema.index({ status: 1, createdAt: -1 });
+
+module.exports = mongoose.model('Application', applicationSchema);
