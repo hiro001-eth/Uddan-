@@ -1,4 +1,3 @@
-
 const express = require('express');
 const mongoose = require('mongoose');
 const cors = require('cors');
@@ -108,14 +107,14 @@ const upload = multer({
 const authenticateAdmin = async (req, res, next) => {
   try {
     const token = req.headers.authorization?.replace('Bearer ', '');
-    
+
     if (!token) {
       return res.status(401).json({ message: 'Access denied. No token provided.' });
     }
 
     const decoded = jwt.verify(token, process.env.JWT_SECRET || 'uddaan-super-secret-key-2024');
     const admin = await Admin.findById(decoded.id).select('-password');
-    
+
     if (!admin || !admin.isActive) {
       return res.status(401).json({ message: 'Invalid token or admin deactivated.' });
     }
@@ -164,9 +163,9 @@ app.get('/api/jobs', async (req, res) => {
       sortBy = 'createdAt',
       sortOrder = 'desc'
     } = req.query;
-    
+
     let query = { isActive: true };
-    
+
     if (country) query.country = { $regex: country, $options: 'i' };
     if (jobType) query.jobType = jobType;
     if (featured === 'true') query.featured = true;
@@ -178,19 +177,19 @@ app.get('/api/jobs', async (req, res) => {
         { description: { $regex: search, $options: 'i' } }
       ];
     }
-    
+
     const skip = (page - 1) * parseInt(limit);
     const sortObj = {};
     sortObj[sortBy] = sortOrder === 'desc' ? -1 : 1;
-    
+
     const jobs = await Job.find(query)
       .sort({ featured: -1, ...sortObj })
       .skip(skip)
       .limit(parseInt(limit))
       .lean();
-    
+
     const total = await Job.countDocuments(query);
-    
+
     res.json({
       success: true,
       jobs,
@@ -214,11 +213,11 @@ app.get('/api/jobs/:id', async (req, res) => {
     if (!job || !job.isActive) {
       return res.status(404).json({ success: false, message: 'Job not found' });
     }
-    
+
     // Increment view count
     job.views += 1;
     await job.save();
-    
+
     res.json({ success: true, job });
   } catch (error) {
     res.status(500).json({ success: false, message: 'Server error', error: error.message });
@@ -229,7 +228,7 @@ app.get('/api/jobs/:id', async (req, res) => {
 app.post('/api/applications', upload.single('resume'), async (req, res) => {
   try {
     const { jobId, name, email, phone, coverLetter } = req.body;
-    
+
     // Validate required fields
     if (!jobId || !name || !email || !phone) {
       return res.status(400).json({ 
@@ -243,7 +242,7 @@ app.post('/api/applications', upload.single('resume'), async (req, res) => {
     if (!job) {
       return res.status(404).json({ success: false, message: 'Job not found' });
     }
-    
+
     const application = new Application({
       jobId,
       name,
@@ -255,12 +254,12 @@ app.post('/api/applications', upload.single('resume'), async (req, res) => {
       ipAddress: req.ip,
       userAgent: req.get('user-agent')
     });
-    
+
     await application.save();
-    
+
     // Update job application count
     await Job.findByIdAndUpdate(jobId, { $inc: { applications: 1 } });
-    
+
     res.status(201).json({ 
       success: true,
       message: 'Application submitted successfully!',
@@ -288,11 +287,11 @@ app.get('/api/events', async (req, res) => {
   try {
     const { type, featured, upcoming } = req.query;
     let query = { isActive: true };
-    
+
     if (type) query.eventType = type;
     if (featured === 'true') query.featured = true;
     if (upcoming === 'true') query.startDate = { $gte: new Date() };
-    
+
     const events = await Event.find(query)
       .sort({ startDate: 1, featured: -1 })
       .lean();
@@ -321,9 +320,9 @@ app.post('/api/ai/chat', async (req, res) => {
   try {
     const { message } = req.body;
     const text = (message || '').toLowerCase();
-    
+
     let reply = 'Hello! I\'m here to help you with jobs, consultation booking, and visa guidance. What would you like to know?';
-    
+
     if (text.includes('job') || text.includes('vacancy') || text.includes('work')) {
       reply = 'We have exciting job opportunities in Gulf countries including UAE, Qatar, Saudi Arabia, Kuwait, Oman, and Bahrain. You can browse our Jobs page and filter by country, job type, or search for specific positions. Would you like me to help you find something specific?';
     } else if (text.includes('consult') || text.includes('book') || text.includes('appointment')) {
@@ -335,7 +334,7 @@ app.post('/api/ai/chat', async (req, res) => {
     } else if (text.includes('study') || text.includes('education') || text.includes('university')) {
       reply = 'We also assist with study abroad opportunities! Browse our educational programs and university partnerships. We can help with admissions, scholarships, and student visa processes.';
     }
-    
+
     res.json({ success: true, reply });
   } catch (error) {
     res.status(500).json({ 
@@ -351,31 +350,31 @@ app.post('/api/ai/chat', async (req, res) => {
 app.post('/api/admin/login', adminLimiter, async (req, res) => {
   try {
     const { email, password } = req.body;
-    
+
     if (!email || !password) {
       return res.status(400).json({ success: false, message: 'Email and password are required' });
     }
-    
+
     const admin = await Admin.findOne({ email, isActive: true });
     if (!admin) {
       return res.status(401).json({ success: false, message: 'Invalid credentials' });
     }
-    
+
     const isValidPassword = await bcrypt.compare(password, admin.password);
     if (!isValidPassword) {
       return res.status(401).json({ success: false, message: 'Invalid credentials' });
     }
-    
+
     const token = jwt.sign(
       { id: admin._id, email: admin.email, role: admin.role },
       process.env.JWT_SECRET || 'uddaan-super-secret-key-2024',
       { expiresIn: '24h' }
     );
-    
+
     // Update last login
     admin.lastLogin = new Date();
     await admin.save();
-    
+
     res.json({ 
       success: true,
       message: 'Login successful',
@@ -443,7 +442,7 @@ app.get('/api/admin/dashboard', authenticateAdmin, async (req, res) => {
 const getMonthlyStats = async () => {
   const sixMonthsAgo = new Date();
   sixMonthsAgo.setMonth(sixMonthsAgo.getMonth() - 6);
-  
+
   const pipeline = [
     { $match: { createdAt: { $gte: sixMonthsAgo } } },
     {
@@ -457,12 +456,12 @@ const getMonthlyStats = async () => {
     },
     { $sort: { '_id.year': 1, '_id.month': 1 } }
   ];
-  
+
   const [jobStats, applicationStats] = await Promise.all([
     Job.aggregate(pipeline),
     Application.aggregate(pipeline)
   ]);
-  
+
   return { jobs: jobStats, applications: applicationStats };
 };
 
@@ -470,7 +469,7 @@ const getMonthlyStats = async () => {
 app.get('/api/admin/jobs', authenticateAdmin, async (req, res) => {
   try {
     const { page = 1, limit = 20, search, status, sortBy = 'createdAt', sortOrder = 'desc' } = req.query;
-    
+
     let query = {};
     if (search) {
       query.$or = [
@@ -479,19 +478,19 @@ app.get('/api/admin/jobs', authenticateAdmin, async (req, res) => {
       ];
     }
     if (status) query.isActive = status === 'active';
-    
+
     const skip = (page - 1) * parseInt(limit);
     const sortObj = {};
     sortObj[sortBy] = sortOrder === 'desc' ? -1 : 1;
-    
+
     const jobs = await Job.find(query)
       .sort(sortObj)
       .skip(skip)
       .limit(parseInt(limit))
       .lean();
-    
+
     const total = await Job.countDocuments(query);
-    
+
     res.json({
       success: true,
       jobs,
@@ -510,18 +509,18 @@ app.post('/api/admin/jobs', authenticateAdmin, upload.single('universityLogo'), 
   try {
     const jobData = { ...req.body };
     if (req.file) jobData.universityLogo = req.file.filename;
-    
+
     // Parse arrays if they come as strings
     if (typeof jobData.requirements === 'string') {
       jobData.requirements = jobData.requirements.split(',').map(req => req.trim());
     }
-    if (typeof jobData.seoKeywords === 	) {
+    if (typeof jobData.seoKeywords === 'string') {
       jobData.seoKeywords = jobData.seoKeywords.split(',').map(keyword => keyword.trim());
     }
-    
+
     const job = new Job(jobData);
     await job.save();
-    
+
     res.status(201).json({ success: true, message: 'Job created successfully', job });
   } catch (error) {
     res.status(400).json({ success: false, message: 'Validation error', error: error.message });
@@ -532,7 +531,7 @@ app.put('/api/admin/jobs/:id', authenticateAdmin, upload.single('universityLogo'
   try {
     const updateData = { ...req.body };
     if (req.file) updateData.universityLogo = req.file.filename;
-    
+
     // Parse arrays if they come as strings
     if (typeof updateData.requirements === 'string') {
       updateData.requirements = updateData.requirements.split(',').map(req => req.trim());
@@ -540,16 +539,16 @@ app.put('/api/admin/jobs/:id', authenticateAdmin, upload.single('universityLogo'
     if (typeof updateData.seoKeywords === 'string') {
       updateData.seoKeywords = updateData.seoKeywords.split(',').map(keyword => keyword.trim());
     }
-    
+
     const job = await Job.findByIdAndUpdate(req.params.id, updateData, { 
       new: true, 
       runValidators: true 
     });
-    
+
     if (!job) {
       return res.status(404).json({ success: false, message: 'Job not found' });
     }
-    
+
     res.json({ success: true, message: 'Job updated successfully', job });
   } catch (error) {
     res.status(400).json({ success: false, message: 'Update error', error: error.message });
@@ -573,7 +572,7 @@ app.get('/api/admin/applications', authenticateAdmin, async (req, res) => {
   try {
     const { status, jobId, page = 1, limit = 20, search } = req.query;
     let query = {};
-    
+
     if (status) query.status = status;
     if (jobId) query.jobId = jobId;
     if (search) {
@@ -582,7 +581,7 @@ app.get('/api/admin/applications', authenticateAdmin, async (req, res) => {
         { email: { $regex: search, $options: 'i' } }
       ];
     }
-    
+
     const skip = (page - 1) * parseInt(limit);
     const applications = await Application.find(query)
       .populate('jobId', 'title company country')
@@ -590,9 +589,9 @@ app.get('/api/admin/applications', authenticateAdmin, async (req, res) => {
       .skip(skip)
       .limit(parseInt(limit))
       .lean();
-    
+
     const total = await Application.countDocuments(query);
-    
+
     res.json({
       success: true,
       applications,
@@ -614,11 +613,11 @@ app.put('/api/admin/applications/:id', authenticateAdmin, async (req, res) => {
       { ...req.body, updatedAt: new Date() },
       { new: true, runValidators: true }
     ).populate('jobId');
-    
+
     if (!application) {
       return res.status(404).json({ success: false, message: 'Application not found' });
     }
-    
+
     res.json({ success: true, message: 'Application updated successfully', application });
   } catch (error) {
     res.status(400).json({ success: false, message: 'Update error', error: error.message });
@@ -630,15 +629,15 @@ app.get('/api/admin/testimonials', authenticateAdmin, async (req, res) => {
   try {
     const { page = 1, limit = 20 } = req.query;
     const skip = (page - 1) * parseInt(limit);
-    
+
     const testimonials = await Testimonial.find()
       .sort({ createdAt: -1 })
       .skip(skip)
       .limit(parseInt(limit))
       .lean();
-    
+
     const total = await Testimonial.countDocuments();
-    
+
     res.json({
       success: true,
       testimonials,
@@ -656,10 +655,10 @@ app.post('/api/admin/testimonials', authenticateAdmin, upload.single('image'), a
   try {
     const testimonialData = { ...req.body };
     if (req.file) testimonialData.image = req.file.filename;
-    
+
     const testimonial = new Testimonial(testimonialData);
     await testimonial.save();
-    
+
     res.status(201).json({ success: true, message: 'Testimonial created successfully', testimonial });
   } catch (error) {
     res.status(400).json({ success: false, message: 'Validation error', error: error.message });
@@ -670,16 +669,16 @@ app.put('/api/admin/testimonials/:id', authenticateAdmin, upload.single('image')
   try {
     const updateData = { ...req.body };
     if (req.file) updateData.image = req.file.filename;
-    
+
     const testimonial = await Testimonial.findByIdAndUpdate(req.params.id, updateData, { 
       new: true, 
       runValidators: true 
     });
-    
+
     if (!testimonial) {
       return res.status(404).json({ success: false, message: 'Testimonial not found' });
     }
-    
+
     res.json({ success: true, message: 'Testimonial updated successfully', testimonial });
   } catch (error) {
     res.status(400).json({ success: false, message: 'Update error', error: error.message });
@@ -703,15 +702,15 @@ app.get('/api/admin/events', authenticateAdmin, async (req, res) => {
   try {
     const { page = 1, limit = 20 } = req.query;
     const skip = (page - 1) * parseInt(limit);
-    
+
     const events = await Event.find()
       .sort({ startDate: -1 })
       .skip(skip)
       .limit(parseInt(limit))
       .lean();
-    
+
     const total = await Event.countDocuments();
-    
+
     res.json({
       success: true,
       events,
@@ -729,10 +728,10 @@ app.post('/api/admin/events', authenticateAdmin, upload.single('image'), async (
   try {
     const eventData = { ...req.body };
     if (req.file) eventData.image = req.file.filename;
-    
+
     const event = new Event(eventData);
     await event.save();
-    
+
     res.status(201).json({ success: true, message: 'Event created successfully', event });
   } catch (error) {
     res.status(400).json({ success: false, message: 'Validation error', error: error.message });
@@ -743,16 +742,16 @@ app.put('/api/admin/events/:id', authenticateAdmin, upload.single('image'), asyn
   try {
     const updateData = { ...req.body };
     if (req.file) updateData.image = req.file.filename;
-    
+
     const event = await Event.findByIdAndUpdate(req.params.id, updateData, { 
       new: true, 
       runValidators: true 
     });
-    
+
     if (!event) {
       return res.status(404).json({ success: false, message: 'Event not found' });
     }
-    
+
     res.json({ success: true, message: 'Event updated successfully', event });
   } catch (error) {
     res.status(400).json({ success: false, message: 'Update error', error: error.message });
@@ -784,13 +783,13 @@ app.get('/api/admin/settings', authenticateAdmin, async (req, res) => {
 app.post('/api/admin/settings', authenticateAdmin, async (req, res) => {
   try {
     const { key, value, category, description, isPublic } = req.body;
-    
+
     const setting = await Setting.findOneAndUpdate(
       { key },
       { value, category, description, isPublic },
       { upsert: true, new: true }
     );
-    
+
     res.json({ success: true, message: 'Setting updated successfully', setting });
   } catch (error) {
     res.status(400).json({ success: false, message: 'Validation error', error: error.message });
