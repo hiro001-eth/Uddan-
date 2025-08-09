@@ -1,0 +1,393 @@
+2) High-level MVC architecture (components & responsibilities)
+Model (data)
+User, Role, Permission
+
+Page (slug, title, body, meta_title, meta_desc, status, author_id, version_id, published_at)
+
+Job (title, company, country, city, type, salary_range, description, requirements, benefits, contact_email, status, posted_by, featured, slug, views, application_count)
+
+Application (job_id, user_id or guest info, resume_path, cover_letter, status, notes, applied_at)
+
+Event (title, description, venue, start_at, end_at, capacity, ticket_price, registrations_count)
+
+Consultation (booking_id, user, date, status, admin_notes, reminders)
+
+Media (file_path, mime, width, height, sizes, thumb, uploaded_by, alt_text, storage_backend, tags)
+
+Setting (name, json_value)
+
+AuditLog (user_id, action, model, model_id, changes, ip, user_agent, created_at)
+
+Theme (colors JSON, fonts JSON, CSS variables, active: bool)
+
+Notification (type, payload, status)
+
+View (Admin UI)
+Dashboard (KPIs: active jobs, applicants, upcoming events, site health)
+
+Content Editor: WYSIWYG + code/HTML view + block templates + SEO panel + preview
+
+Jobs list / create / bulk import / publish schedule
+
+Events list / calendar view / registrations
+
+Media library with crop, responsive export & CDN links
+
+Users & roles management (invite users, reset 2FA)
+
+Settings & site identity (phone, email, address, quick links, contact hours)
+
+Audit & activity logs; undo/rollback UI
+
+Theme editor (color pickers, fonts, preview)
+
+Security center (2FA status, active sessions, IP blocks)
+
+Alerts & monitoring (error logs, failed jobs)
+
+Controller (API endpoints + server pages)
+AuthController — login, logout, 2FA, session management, SSO
+
+UsersController — CRUD users, roles, reset passwords, sessions
+
+PagesController — CRUD pages, publish, preview, schedule
+
+JobsController — CRUD jobs, feature job, bulk import/export, stats
+
+ApplicationsController — view applications, change status, email applicants
+
+MediaController — upload (chunked), list, delete, presign (S3), transform endpoints
+
+EventsController — CRUD, registration management, tickets
+
+SettingsController — read/write site settings
+
+AuditController — query logs, export logs
+
+HealthController — status for CI/CD and monitoring
+
+3) Feature list — admin capabilities (detailed)
+Content & Layout
+
+Page builder with reusable blocks (hero, CTA, testimonials, job list).
+
+Live preview (desktop/tablet/mobile). A/B testing/staging preview.
+
+SEO fields: canonical, meta tags, structured data JSON-LD generator, sitemap auto-generation.
+
+Internationalization (Nepali + English), locale switch, currency configs.
+
+Jobs & Hiring
+
+Multi-field job editor (requirement tags, skills, visa-type).
+
+Application tracking: statuses (new, screening, interviewed, offered, rejected).
+
+Auto-notification templates for applicants (email + SMS).
+
+Bulk CSV import and CSV export of job lists & applicants.
+
+Quick-apply toggle & apply via portal with resume upload.
+
+Events
+
+Ticket types, capacity management, waitlist handling.
+
+Calendar integration (Google Calendar, ICS export).
+
+Event analytics: registrations, conversion, revenue.
+
+Media & Assets
+
+Drag & drop upload, auto-resize, WebP conversion, retina images.
+
+Presigned URLs for secure uploads and downloads (time-limited).
+
+Central CDN integration with cache invalidation endpoint.
+
+Design & Theme
+
+Theme variables: primary/secondary colors, font families, spacing scale.
+
+Font manager: integrate Google Fonts + upload custom fonts (woff2).
+
+Global CSS variables and per-page overrides.
+
+Dark mode preview.
+
+Admin Ops & Integrations
+
+Role-based access & granular permissions.
+
+Audit logs, content version history, restore to previous version.
+
+Scheduled publishing & unpublish.
+
+Rate-limited bulk operations & queuing (Redis/Queue workers).
+
+Integrations: Mail (SMTP/SendGrid), SMS (Twilio), Payment (Stripe/PayPal), Analytics.
+
+DevOps & Observability
+
+Health checks, metrics (Prometheus/Grafana), error reporting (Sentry).
+
+DB backups, point-in-time recovery, read-replicas for scaling.
+
+4) Security & hardening (what to implement and why)
+Authentication & Session
+
+Strong password hashing: Argon2id (or Bcrypt with secure parameters).
+
+Enforce MFA (TOTP) for all admin roles and allow U2F/YubiKey for super-admins.
+
+Short-lived session cookies with HttpOnly, Secure, SameSite=Strict.
+
+JWT access tokens with short TTL + refresh tokens stored server-side or secure httpOnly cookie.
+
+Limit concurrent sessions & expose admin session management (revoke sessions).
+
+Network & app perimeter
+
+Force HTTPS everywhere (Let's Encrypt or managed TLS). HSTS header.
+
+Admin behind IP allowlist option and/or enforce VPN access for super-admins.
+
+Obscure admin route (e.g., not /admin, configurable path); do NOT rely on obscurity alone.
+
+Web Application Firewall (Cloudflare/WAF/mod_security) and rate limiting.
+
+Web & API hardening
+
+CSRF tokens for state-changing requests.
+
+Strict CSP (Content Security Policy) and X-Frame-Options: DENY.
+
+Input validation & parameterized queries (no string concatenation).
+
+ORM prepared-statements; avoid dynamic SQL where possible.
+
+Output encoding to mitigate XSS; sanitize HTML on WYSIWYG content using a allowlist sanitizer.
+
+File validation for uploads (mime sniffing, virus scan integration).
+
+URLs & assets encryption
+
+Use signed (presigned) URLs for media downloads and uploads (S3 presigned or CDN signed URLs). They expire and include a signature — cannot be guessed.
+
+For admin one-time links (passwordless login, password reset), use cryptographically signed one-time tokens with short expiry; store a server-side nonce to prevent replay.
+
+Data at rest & keys
+
+Encrypt sensitive DB columns (e.g., passport numbers) with AES-256 using KMS or managed secrets.
+
+Use a secret store (HashiCorp Vault or cloud KMS) for keys; rotate keys regularly.
+
+Backups encrypted and stored offsite with access controls.
+
+Monitoring & detection
+
+Audit logs with immutability (append-only) and periodic export to SIEM.
+
+File integrity monitoring for critical files.
+
+IDS/IPS for suspicious traffic and automated alerts.
+
+Scheduled pentesting and vulnerability scanning (Snyk, Dependabot).
+
+Deployment security
+
+CI pipelines run static analysis, dependency checks, secrets-scan before deployment.
+
+Limit who can deploy to production; require approvals for prod deploys.
+
+Honest note: “bug-free” is impossible to guarantee. Instead aim for strong SDLC, automated tests, pen-testing, and a bug-fix SLA.
+
+5) DB schema (core tables, simplified)
+scss
+Copy
+Edit
+users (id, name, email, password_hash, phone, role_id, is_active, mfa_secret, created_at, last_login)
+roles (id, name)
+permissions (id, name, description)
+role_permission (role_id, permission_id)
+
+pages (id, slug, title, body, meta_title, meta_desc, status, author_id, version, created_at, updated_at, published_at)
+
+jobs (id, title, company, country, city, job_type, salary_min, salary_max, description, requirements, benefits, contact_email, status, featured, views, created_by, created_at, updated_at)
+
+applications (id, job_id, candidate_name, candidate_email, resume_path, cover_letter, status, notes, applied_at)
+
+events (id, title, description, venue, start_at, end_at, capacity, ticket_price, created_by, created_at)
+
+media (id, filename, mime_type, size, width, height, path, storage_backend, uploaded_by, tags, created_at)
+
+settings (key, value_json, updated_by, updated_at)
+
+audit_logs (id, user_id, action, model, model_id, changes_json, ip, user_agent, created_at)
+(Use UUID primary keys if you want non-guessable IDs for security.)
+
+6) Core API endpoints (examples)
+Auth:
+
+POST /api/admin/login
+
+POST /api/admin/logout
+
+POST /api/admin/2fa/verify
+
+POST /api/admin/password-reset/request
+
+POST /api/admin/password-reset/confirm
+
+Pages:
+
+GET /api/admin/pages
+
+POST /api/admin/pages
+
+GET /api/admin/pages/:id/preview
+
+PUT /api/admin/pages/:id
+
+DELETE /api/admin/pages/:id
+
+POST /api/admin/pages/:id/publish (schedule/publish)
+
+Jobs:
+
+GET /api/admin/jobs
+
+POST /api/admin/jobs
+
+PUT /api/admin/jobs/:id
+
+DELETE /api/admin/jobs/:id
+
+POST /api/admin/jobs/bulk-import (CSV)
+
+GET /api/admin/jobs/:id/applications
+
+Media:
+
+POST /api/admin/media/presign-upload -> return presigned URL
+
+GET /api/admin/media (list)
+
+DELETE /api/admin/media/:id
+
+Users & Roles:
+
+GET /api/admin/users
+
+POST /api/admin/users
+
+PUT /api/admin/users/:id/roles
+
+POST /api/admin/users/:id/revoke-sessions
+
+Settings:
+
+GET /api/admin/settings
+
+PUT /api/admin/settings
+
+Audit:
+
+GET /api/admin/audit (filterable)
+
+7) UI/UX & Admin Panel details
+Default dashboard widgets: site visits, active jobs, applicants today, upcoming events, error rate.
+
+Inline editing on page list (quick edit).
+
+Bulk actions: publish/unpublish/delete/feature.
+
+Role-aware UI: show/hide buttons based on permission.
+
+Per-item activity feed (who edited what and when).
+
+Undo / restore last N changes per page/version diff viewer.
+
+Drag-and-drop media insertion in the editor + automatic alt text suggestions (AI-assisted optional).
+
+Accessibility checks for content (WCAG automated audit).
+
+8) Image / media & "encrypted URL" approach (practical)
+Store originals in S3 (or MinIO). Serve via CDN (CloudFront, Cloudflare).
+
+Generate signed CDN URLs for private assets (signed cookie or signed URL). Example:
+
+Create presigned URL server-side that expires in X minutes, deliver to client only after admin auth verification.
+
+For public site images (jobs/company logos) you can use public CDN cached resources. For sensitive docs (resumes), always store encrypted and serve with signed presigned links.
+
+For image processing (crop/resize) use server-side worker or on-the-fly image resizer service with signed requests and SHA256 signature to prevent abuse.
+
+9) Testing & CI/CD
+Unit tests for controllers and services.
+
+Integration tests for DB interactions and upload flows.
+
+E2E tests for flows: login+2FA, create job, apply candidate, upload resume.
+
+Security tests: dependency vulnerability scan, SAST, DAST.
+
+CI: run tests and linters on PR; require review before merge.
+
+CD: Blue/green deploy to minimize downtime.
+
+10) Monitoring, backup & incident response
+Use Sentry for errors; PagerDuty for critical alerts.
+
+Backup DB daily and keep weekly monthly snapshots with retention policy.
+
+Run routine recovery drills (restore from backup in staging).
+
+Keep an incident playbook: steps to rotate keys, revoke sessions, disable admin access.
+
+11) Choice of stack (recommended given your background)
+If you prefer PHP/Laravel (you said you used Laravel before) — Laravel + Livewire for a fast admin UI, with:
+
+Frontend: Blade + Livewire (or React/Next for richer UI)
+
+DB: Postgres (or MySQL) + Redis
+
+Storage: AWS S3 / MinIO
+
+Search: ElasticSearch or MeiliSearch (for jobs)
+
+Queue: Redis + Horizon
+
+Authentication: Laravel Sanctum (for SPA) + TOTP package
+
+ORM: Eloquent with prepared statements (safe)
+
+If you want JS stack: NestJS (backend) + Next.js (Admin) + TypeORM + Postgres.
+
+12) Minimal roadmap / milestones
+MVP (2–3 weeks): Auth, Jobs CRUD, Pages CRUD, Media uploads (S3), Dashboard, RBAC.
+
+Phase 2 (2–4 weeks): Events, Applications, Consultation bookings, scheduled publishing, theme editor.
+
+Phase 3 (2–3 weeks): Advanced security, image optimization, presigned URLs, monitoring & backups, tests.
+
+Phase 4 (ongoing): Pen testing, performance tuning, multilingual, analytics dashboards, integrations.
+
+13) Example "secure presigned URL" pattern (concept)
+Admin requests POST /api/admin/media/presign-upload with filename & content-type.
+
+Server validates admin permission and returns { url: "<S3 presigned upload URL>", id: "<media-id>", preview: "<signed CDN url>" }.
+
+Client uploads directly to S3 with the presigned URL.
+
+After success, client calls POST /api/admin/media/complete to mark file as ready. Server validates signature & creates DB record.
+
+For downloads of CVs: generate presigned GET url that expires in e.g. 10 minutes.
+
+14) Final notes & next steps I suggest
+Choose stack (Laravel recommended since you're familiar). I can produce a starter repo structure and sample controller + migration if you want.
+
+Decide hosting (VPS vs cloud managed). For scale and security, go cloud (AWS/GCP/Hetzner + Cloudflare).
+
+Prioritize: 2FA + presigned uploads + audit logs + backups — these should be in MVP for production security.
+
