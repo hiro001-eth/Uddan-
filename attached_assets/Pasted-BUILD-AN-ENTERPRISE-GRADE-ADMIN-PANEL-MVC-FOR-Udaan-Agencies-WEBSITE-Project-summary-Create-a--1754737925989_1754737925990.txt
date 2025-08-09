@@ -1,0 +1,33 @@
+BUILD AN ENTERPRISE-GRADE ADMIN PANEL (MVC) FOR "Udaan Agencies" WEBSITE
+
+Project summary:
+Create a secure, extensible Admin Panel to fully manage the public site (Home, Jobs, About, Events, Consultation booking, Contact, Success stories, Policies, Footer, etc.). Admins must be able to CRUD content, manage themes, fonts, images, job postings and applicants, events, consultations, users, partners, and global site settings. It must support multi-role RBAC, full audit trail, content versioning, scheduled publishing, and safe signed/encrypted admin URLs. Integrate media CDN, email, SMS, and payment gateway hooks. Provide RESTful API + server-rendered Admin UI with live preview and WYSIWYG editing. Use secure defaults, automated tests, CI/CD, backups, and monitoring.
+
+Core requirements:
+- MVC architecture; controllers for Jobs, Events, Pages, Media, Users, Settings, Reports, Auth, Audit.
+- Role-based access control: super-admin, content-admin, moderator, HR (job manager), event-manager, support.
+- WYSIWYG editor with image upload & inline formatting, markdown support, and template blocks.
+- Global Theme & Font manager: live preview, color palette, CSS variables, font upload & Google Fonts integration.
+- Media manager: image optimization, responsive versions, cropping, tagging, CDN storage (S3/MinIO), presigned URLs for secure access.
+- Job management: multi-country, job types, salary ranges, featured flag, application count, quick apply, bulk import/export CSV.
+- Event management: registration limits, ticketing metadata, RSVPs, calendar export (ics).
+- Consultation bookings: calendar integration, admin scheduling, reminders via email/SMS.
+- Applicants & contact management: secure file storage for CVs, application status lifecycle, notes, and internal comments.
+- System settings: site contact info, working hours, phone/email, business address, policies; editable via Admin.
+- Audit & activity log; content versioning and rollback; scheduled publishing.
+- API auth with JWT + refresh tokens, CSRF protection for the admin UI.
+- Secure admin endpoints: obscured and configurable admin path, IP allowlist, rate limiting, 2FA, MFA (TOTP), single sign-on support.
+- Encrypted and signed URLs: presigned object URLs for media and signed tokenized admin links for one-time actions.
+- HTTPS/TLS, HSTS, CSP, X-Frame-Options, Strict-Transport-Security headers.
+- Automated backup, DB encryption-at-rest, key management & rotation.
+- Tests: unit, integration, e2e (Cypress/Puppeteer), static code analysis & automated security scanning.
+- CI/CD with staging & production; migration plan and data seeding for dev.
+
+Deliverables:
+1. Repo with clear README, docker-compose + Dockerfile, and env sample.
+2. Full MVC code base for backend + Admin UI; Postgres schema migrations.
+3. API docs (OpenAPI/Swagger) and Admin UI design (Figma/Storybook optional).
+4. Tests, CI pipeline config, deployment scripts, and runbook for backups and incident response.
+5. Security report & checklist, plus a 1-week hardening & pentest remediation plan.
+
+Preferred stack: Laravel (or Node NestJS/Django) backend; React/Next admin with Tailwind & shadcn components; Postgres DB; Redis for caching & sessions; S3 + CDN; Nginx reverse proxy; Docker.
