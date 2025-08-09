@@ -1,159 +1,333 @@
-# 🚀 **UDDAAN CONSULTANCY - YOUR GATEWAY TO GLOBAL OPPORTUNITIES**
 
-A complete job and study opportunity platform with admin management system.
+# 🚀 **UDDAAN CONSULTANCY - ENTERPRISE ADMIN SYSTEM**
 
-## 📋 **FEATURES**
+A complete enterprise-grade job consultancy platform with comprehensive admin management system, built with modern security practices and scalable architecture.
 
-### **For Users:**
-- ✅ Browse jobs by country and type
-- ✅ View detailed job information
-- ✅ Submit applications with resume upload
-- ✅ Professional, responsive design
-- ✅ Mobile-friendly interface
+## 🌟 **ENTERPRISE FEATURES**
 
-### **For Admin:**
-- ✅ Secure admin login
-- ✅ Add, edit, and delete jobs
-- ✅ View all applications
-- ✅ Contact applicants directly
-- ✅ Dashboard with analytics
-- ✅ Application status management
+### **🔐 Security & Authentication**
+- ✅ Multi-Factor Authentication (TOTP/QR Code)
+- ✅ Role-Based Access Control (RBAC)
+- ✅ JWT with secure session management
+- ✅ Password hashing with bcrypt
+- ✅ Rate limiting and DDoS protection
+- ✅ Comprehensive audit logging
+- ✅ Input validation and sanitization
+- ✅ CSRF protection and security headers
+
+### **👥 User Management**
+- ✅ Advanced user roles and permissions
+- ✅ User session management
+- ✅ Profile management with image upload
+- ✅ Password reset functionality
+- ✅ User activity tracking
+
+### **💼 Job Management**
+- ✅ Advanced job posting with rich content
+- ✅ SEO optimization for job listings
+- ✅ Featured jobs and job categories
+- ✅ Application tracking system
+- ✅ Bulk job import/export (CSV)
+- ✅ Job analytics and statistics
+
+### **📝 Content Management**
+- ✅ Page builder with reusable blocks
+- ✅ WYSIWYG editor with HTML support
+- ✅ SEO fields and meta management
+- ✅ Multi-language support (Nepali/English)
+- ✅ Content versioning and scheduling
+- ✅ Draft and publish workflow
+
+### **📁 Media Management**
+- ✅ Advanced file upload with validation
+- ✅ Image processing and thumbnails
+- ✅ CDN integration ready
+- ✅ File organization with tags
+- ✅ Secure file access controls
+- ✅ Multiple storage backends support
+
+### **📊 Analytics & Monitoring**
+- ✅ Comprehensive dashboard with KPIs
+- ✅ Real-time statistics and charts
+- ✅ User activity monitoring
+- ✅ System health monitoring
+- ✅ Performance metrics
+- ✅ Error tracking and reporting
+
+### **🎨 Theme & Customization**
+- ✅ Advanced theme management
+- ✅ Color customization
+- ✅ Font management
+- ✅ Dark mode support
+- ✅ Custom CSS injection
+- ✅ Responsive design controls
+
+### **📅 Event Management**
+- ✅ Event creation and management
+- ✅ Registration tracking
+- ✅ Calendar integration
+- ✅ Ticket management
+- ✅ Event analytics
+
+### **💬 Consultation System**
+- ✅ Booking management
+- ✅ Automated notifications
+- ✅ Client communication tools
+- ✅ Follow-up scheduling
+- ✅ Meeting link integration
 
 ## 🛠️ **TECHNOLOGY STACK**
 
-- **Frontend**: React.js with Tailwind CSS
-- **Backend**: Node.js with Express
-- **Database**: MongoDB
-- **File Upload**: Multer
-- **Authentication**: JWT (basic)
-- **Styling**: Tailwind CSS with custom components
+### **Backend**
+- **Framework**: Node.js with Express.js
+- **Database**: MongoDB with Mongoose ODM
+- **Authentication**: JWT + bcrypt + Speakeasy (2FA)
+- **File Processing**: Multer + Sharp
+- **Email**: Nodemailer
+- **Security**: Helmet, CORS, Rate Limiting
+- **Validation**: Express Validator
+
+### **Frontend**
+- **Framework**: React 18 with Modern Hooks
+- **Routing**: React Router DOM v6
+- **Styling**: Tailwind CSS
+- **Icons**: Lucide React
+- **Charts**: Recharts
+- **Forms**: React Hook Form
+- **Notifications**: React Hot Toast
+- **Date Handling**: Date-fns
+
+### **Database Schema**
+```
+Users (RBAC) → Roles → Permissions
+Jobs → Applications → Candidates
+Pages → Content → SEO
+Media → Files → Thumbnails
+Events → Registrations
+Consultations → Bookings → Follow-ups
+Audit Logs → Activity Tracking
+Themes → Customization
+Settings → Configuration
+```
 
 ## 🚀 **QUICK START**
 
-### **1. Install Dependencies**
+### **Prerequisites**
+- Node.js 18+ and npm
+- MongoDB 5.0+
+- Git
+
+### **1. Clone Repository**
 ```bash
-# Install root dependencies
-npm install
+git clone https://github.com/your-username/uddaan-consultancy.git
+cd uddaan-consultancy
+```
 
-# Install backend dependencies
+### **2. Environment Setup**
+```bash
+# Copy environment template
+cp backend/.env.example backend/.env
+
+# Edit with your configuration
+nano backend/.env
+```
+
+### **3. Install Dependencies**
+```bash
+# Install all dependencies
+./start.sh
+
+# Or manually:
 cd backend && npm install
-
-# Install frontend dependencies
 cd ../frontend && npm install
 ```
 
-### **2. Setup MongoDB**
+### **4. Database Setup**
 ```bash
-# Start MongoDB (Ubuntu/Debian)
-sudo systemctl start mongodb
-sudo systemctl enable mongodb
-
-# Or on macOS with Homebrew
-brew services start mongodb-community
+# Seed database with sample data
+cd backend
+npm run seed
 ```
 
-### **3. Create Environment File**
-Create `backend/.env` file:
-```env
-MONGODB_URI=mongodb://localhost:27017/uddaan-consultancy
-PORT=5000
-NODE_ENV=development
-```
-
-### **4. Start the Application**
+### **5. Start Development**
 ```bash
 # Start both frontend and backend
 npm run dev
-
-# Or start separately:
-# Backend: npm run server
-# Frontend: npm run client
 ```
-
-## 🌐 **ACCESS YOUR APPLICATION**
-
-- **Frontend**: http://localhost:3000
-- **Backend API**: http://localhost:5000
-- **Admin Panel**: http://localhost:3000/admin
-
-## 🔐 **ADMIN CREDENTIALS**
-
-- **Username**: admin
-- **Password**: uddaan123
 
 ## 📁 **PROJECT STRUCTURE**
 
 ```
 uddaan-consultancy/
 ├── backend/
-│   ├── models/
-│   │   ├── Job.js
-│   │   ├── Application.js
-│   │   └── Admin.js
-│   ├── server.js
-│   ├── package.json
-│   └── .env
+│   ├── models/           # Database models
+│   │   ├── User.js       # User & authentication
+│   │   ├── Role.js       # RBAC system
+│   │   ├── Job.js        # Job management
+│   │   ├── Application.js # Application tracking
+│   │   ├── Page.js       # Content management
+│   │   ├── Media.js      # File management
+│   │   ├── Event.js      # Event management
+│   │   ├── Consultation.js # Booking system
+│   │   ├── AuditLog.js   # Activity tracking
+│   │   ├── Theme.js      # UI customization
+│   │   └── Setting.js    # Configuration
+│   ├── server.js         # Main application server
+│   ├── seedData.js       # Database initialization
+│   └── package.json      # Backend dependencies
 ├── frontend/
 │   ├── src/
-│   │   ├── components/
-│   │   │   ├── Header.jsx
-│   │   │   └── Footer.jsx
-│   │   ├── pages/
-│   │   │   ├── HomePage.jsx
-│   │   │   ├── JobListPage.jsx
-│   │   │   ├── JobDetailPage.jsx
-│   │   │   ├── ApplicationForm.jsx
-│   │   │   ├── AdminLogin.jsx
-│   │   │   └── AdminDashboard.jsx
-│   │   ├── App.js
-│   │   └── index.css
-│   ├── package.json
-│   └── tailwind.config.js
-├── package.json
-└── README.md
+│   │   ├── components/   # Reusable components
+│   │   ├── pages/        # Application pages
+│   │   │   ├── AdminDashboard.jsx # Enterprise admin panel
+│   │   │   ├── AdminLogin.jsx     # Secure login
+│   │   │   └── ...
+│   │   ├── App.js        # Main application
+│   │   └── index.css     # Global styles
+│   └── package.json      # Frontend dependencies
+├── uploads/              # File storage
+├── .env.example          # Environment template
+├── start.sh              # Quick start script
+└── README.md             # This file
 ```
 
-## 🎯 **USER JOURNEY**
+## 🌐 **ACCESS POINTS**
 
-1. **User visits website** → Sees job search form
-2. **User searches jobs** → Selects country and job type
-3. **User sees job list** → Clicks on a job
-4. **User views job details** → Clicks "Apply Now"
-5. **User fills form** → Uploads resume and submits
-6. **Admin gets notification** → Sees application in admin panel
-7. **Admin contacts user** → Via email or phone
+- **Frontend**: http://localhost:3000
+- **Admin Panel**: http://localhost:3000/secure-admin-access-2024
+- **API Health**: http://localhost:5000/api/health
+- **API Documentation**: http://localhost:5000/api/docs
 
-## 🔧 **ADMIN FEATURES**
+## 🔐 **DEFAULT CREDENTIALS**
+
+### **Super Admin**
+- **Email**: admin@uddaan.com
+- **Password**: uddaan123
+
+### **Content Manager**
+- **Email**: content@uddaan.com
+- **Password**: uddaan123
+
+## 📊 **ADMIN PANEL FEATURES**
 
 ### **Dashboard**
-- Total jobs count
-- Total applications count
-- Recent applications
-- Quick actions
+- Real-time statistics and KPIs
+- Interactive charts and analytics
+- Recent activity monitoring
+- System health indicators
+- Quick action buttons
+
+### **User Management**
+- Create/edit users with roles
+- Permission management
+- Session monitoring
+- Activity tracking
+- Bulk operations
+
+### **Content Management**
+- Page builder with blocks
+- SEO optimization tools
+- Media library integration
+- Publishing workflow
+- Version control
 
 ### **Job Management**
-- Add new job
-- Edit existing job
-- Delete job
-- View all jobs
+- Advanced job editor
+- Application tracking
+- Candidate management
+- Analytics and reporting
+- Bulk import/export
 
-### **Application Management**
-- View all applications
-- Filter by status
-- Contact applicant
-- Update application status
+### **System Administration**
+- Audit log viewing
+- Security monitoring
+- Performance metrics
+- Configuration management
+- Backup and maintenance
 
-## 📱 **RESPONSIVE DESIGN**
+## 🔧 **API ENDPOINTS**
 
-The application is fully responsive and works on:
-- Desktop computers
-- Tablets
-- Mobile phones
-- All modern browsers
+### **Authentication**
+```
+POST   /api/admin/login          # Admin login
+POST   /api/admin/logout         # Admin logout
+POST   /api/admin/mfa/setup      # Setup 2FA
+POST   /api/admin/mfa/verify     # Verify 2FA
+```
+
+### **User Management**
+```
+GET    /api/admin/users          # List users
+POST   /api/admin/users          # Create user
+PUT    /api/admin/users/:id      # Update user
+DELETE /api/admin/users/:id      # Delete user
+```
+
+### **Job Management**
+```
+GET    /api/admin/jobs           # List jobs
+POST   /api/admin/jobs           # Create job
+PUT    /api/admin/jobs/:id       # Update job
+DELETE /api/admin/jobs/:id       # Delete job
+```
+
+### **Content Management**
+```
+GET    /api/admin/pages          # List pages
+POST   /api/admin/pages          # Create page
+PUT    /api/admin/pages/:id      # Update page
+DELETE /api/admin/pages/:id      # Delete page
+```
+
+### **Media Management**
+```
+GET    /api/admin/media          # List media
+POST   /api/admin/media          # Upload files
+DELETE /api/admin/media/:id      # Delete media
+```
+
+## 🛡️ **SECURITY FEATURES**
+
+### **Authentication & Authorization**
+- JWT tokens with secure expiration
+- Multi-factor authentication (TOTP)
+- Role-based access control (RBAC)
+- Session management
+- Password security policies
+
+### **Data Protection**
+- Input validation and sanitization
+- SQL injection prevention
+- XSS protection
+- CSRF protection
+- File upload security
+
+### **Network Security**
+- Rate limiting
+- CORS configuration
+- Security headers (Helmet)
+- IP-based restrictions
+- DDoS protection
+
+### **Monitoring & Auditing**
+- Comprehensive audit logging
+- Real-time monitoring
+- Error tracking
+- Performance monitoring
+- Security event logging
+
+## 📈 **PERFORMANCE OPTIMIZATION**
+
+- Database indexing for optimal queries
+- Image compression and optimization
+- CDN integration support
+- Caching strategies
+- Code splitting and lazy loading
+- Bundle optimization
 
 ## 🚀 **DEPLOYMENT**
 
-### **Local Development**
+### **Development**
 ```bash
 npm run dev
 ```
@@ -167,39 +341,56 @@ cd frontend && npm run build
 cd backend && npm start
 ```
 
-## 🛡️ **SECURITY FEATURES**
+### **Environment Variables**
+Configure the following in `backend/.env`:
+- Database connections
+- JWT secrets
+- Email configuration
+- File storage settings
+- External API keys
 
-- Input validation
-- File upload restrictions
-- Rate limiting
-- CORS protection
-- Secure headers
+## 🔍 **MONITORING & MAINTENANCE**
+
+### **Health Checks**
+- Database connectivity
+- File system health
+- Memory usage
+- Response times
+- Error rates
+
+### **Backup Strategy**
+- Automated database backups
+- File storage backups
+- Configuration backups
+- Disaster recovery procedures
+
+### **Updates & Maintenance**
+- Security patch management
+- Dependency updates
+- Performance optimization
+- Feature enhancements
+
+## 🤝 **CONTRIBUTING**
+
+1. Fork the repository
+2. Create a feature branch
+3. Make your changes
+4. Write tests
+5. Submit a pull request
 
 ## 📞 **SUPPORT**
 
-For any issues or questions:
-- Check the console for error messages
-- Ensure MongoDB is running
-- Verify all dependencies are installed
-- Check environment variables
+For technical support and inquiries:
+- **Email**: tech@uddaanconsultancy.com
+- **Phone**: +977-1-4444444
+- **Website**: https://uddaanconsultancy.com
 
-## 🎨 **CUSTOMIZATION**
+## 📄 **LICENSE**
 
-### **Colors**
-Edit `frontend/tailwind.config.js` to change the color scheme:
-```javascript
-colors: {
-  primary: { /* Your colors */ },
-  secondary: { /* Your colors */ },
-  accent: { /* Your colors */ }
-}
-```
-
-### **Content**
-- Update job listings in admin panel
-- Modify company information in components
-- Change contact details in Footer component
+This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
 
 ---
 
-**Built with ❤️ for Uddaan Consultancy**
+**Built with ❤️ by Uddaan Consultancy Team**
+
+*Connecting Nepali Professionals with Global Opportunities*

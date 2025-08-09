@@ -1,41 +1,46 @@
+
 #!/bin/bash
 
-echo "🚀 Starting Uddaan Consultancy..."
-echo "=================================="
+echo "🚀 Starting Uddaan Consultancy Application..."
 
-# Check if MongoDB is running
-if ! systemctl is-active --quiet mongodb; then
-    echo "📦 Starting MongoDB..."
-    sudo systemctl start mongodb
-    sudo systemctl enable mongodb
+# Check if Node.js is installed
+if ! command -v node &> /dev/null; then
+    echo "❌ Node.js is not installed. Please install Node.js first."
+    exit 1
 fi
 
-# Install dependencies if needed
-if [ ! -d "node_modules" ]; then
-    echo "📦 Installing dependencies..."
-    npm install
-    cd backend && npm install && cd ..
-    cd frontend && npm install && cd ..
+# Check if npm is installed
+if ! command -v npm &> /dev/null; then
+    echo "❌ npm is not installed. Please install npm first."
+    exit 1
 fi
+
+# Install backend dependencies
+echo "📦 Installing backend dependencies..."
+cd backend
+npm install
+
+# Install frontend dependencies
+echo "📦 Installing frontend dependencies..."
+cd ../frontend
+npm install
+
+# Go back to root
+cd ..
 
 # Create .env file if it doesn't exist
-if [ ! -f "backend/.env" ]; then
+if [ ! -f backend/.env ]; then
     echo "📝 Creating environment file..."
-    cat > backend/.env << EOF
-MONGODB_URI=mongodb://localhost:27017/uddaan-consultancy
-PORT=5000
-NODE_ENV=development
-EOF
+    cp backend/.env.example backend/.env
+    echo "⚠️  Please edit backend/.env with your configuration"
 fi
 
-# Start the application
-echo "🎯 Starting application..."
-npm run dev
+# Seed database
+echo "🌱 Seeding database..."
+cd backend
+npm run seed
 
-echo ""
-echo "✅ Application is starting up!"
-echo "🌐 Frontend: http://localhost:3000"
-echo "🔧 Backend: http://localhost:5000"
-echo "👤 Admin: http://localhost:3000/admin"
-echo ""
-echo "Press Ctrl+C to stop" 
+# Start the application
+echo "🚀 Starting the application..."
+cd ..
+npm run dev

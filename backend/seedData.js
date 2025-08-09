@@ -1,268 +1,399 @@
+
 const mongoose = require('mongoose');
+const bcrypt = require('bcrypt');
+require('dotenv').config();
+
+// Import models
+const User = require('./models/User');
+const Role = require('./models/Role');
 const Job = require('./models/Job');
-const Testimonial = require('./models/Testimonial');
-const Event = require('./models/Event');
+const Page = require('./models/Page');
 const Setting = require('./models/Setting');
+const Theme = require('./models/Theme');
+const Event = require('./models/Event');
+const Testimonial = require('./models/Testimonial');
 
-// Connect to MongoDB
-mongoose.connect('mongodb://localhost:27017/uddaan-consultancy', {
-  useNewUrlParser: true,
-  useUnifiedTopology: true,
-});
-
-const sampleJobs = [
-  {
-    title: "Master of Computer Science",
-    company: "University of Toronto",
-    country: "Canada",
-    jobType: "study",
-    salary: "CA$28,500/year",
-    description: "A comprehensive program covering advanced computer science concepts, machine learning, and software engineering. Students will gain hands-on experience with cutting-edge technologies and research opportunities.",
-    requirements: ["GPA 3.5+", "IELTS 7.0", "GRE 320+", "Computer Science background"],
-    contactEmail: "admissions@utoronto.ca",
-    programType: "Master",
-    duration: "2 years",
-    tuitionFee: "CA$28,500/year",
-    applicationDeadline: new Date("2025-01-15"),
-    universityLogo: "https://images.unsplash.com/photo-1562774053-701939374585?w=100&h=100&fit=crop&crop=center",
-    universityWebsite: "https://www.utoronto.ca",
-    scholarships: true,
-    matchPercentage: 92,
-    featured: true,
-    seoTitle: "Master of Computer Science at University of Toronto",
-    seoDescription: "Study Computer Science at University of Toronto. Top-ranked program with research opportunities and industry connections.",
-    seoKeywords: ["computer science", "master degree", "toronto", "canada", "technology"]
-  },
-  {
-    title: "Bachelor of Business Administration",
-    company: "University of British Columbia",
-    country: "Canada",
-    jobType: "study",
-    salary: "CA$35,000/year",
-    description: "Develop strong business fundamentals with real-world applications. Learn from industry experts and gain international business perspectives.",
-    requirements: ["GPA 3.0+", "IELTS 6.5", "High School Diploma", "Personal Statement"],
-    contactEmail: "admissions@ubc.ca",
-    programType: "Bachelor",
-    duration: "4 years",
-    tuitionFee: "CA$35,000/year",
-    applicationDeadline: new Date("2025-03-01"),
-    universityLogo: "https://images.unsplash.com/photo-1562774053-701939374585?w=100&h=100&fit=crop&crop=center",
-    universityWebsite: "https://www.ubc.ca",
-    scholarships: true,
-    matchPercentage: 88,
-    featured: true,
-    seoTitle: "Bachelor of Business Administration at UBC",
-    seoDescription: "Start your business career with UBC's prestigious BBA program. Global opportunities await.",
-    seoKeywords: ["business administration", "bachelor degree", "ubc", "canada", "business"]
-  },
-  {
-    title: "Software Developer",
-    company: "TechCorp Canada",
-    country: "Canada",
-    jobType: "work",
-    salary: "CA$75,000 - CA$95,000",
-    description: "Join our dynamic team developing cutting-edge software solutions. Work with modern technologies and contribute to innovative projects.",
-    requirements: ["JavaScript", "React", "Node.js", "3+ years experience"],
-    contactEmail: "hr@techcorp.ca",
-    programType: "Work",
-    duration: "Full-time",
-    tuitionFee: "N/A",
-    applicationDeadline: new Date("2025-02-28"),
-    universityLogo: "https://images.unsplash.com/photo-1562774053-701939374585?w=100&h=100&fit=crop&crop=center",
-    universityWebsite: "https://www.techcorp.ca",
-    scholarships: false,
-    matchPercentage: 85,
-    featured: true,
-    seoTitle: "Software Developer Position at TechCorp Canada",
-    seoDescription: "Exciting software development opportunity in Canada. Join a growing tech company.",
-    seoKeywords: ["software developer", "canada", "tech", "programming", "job"]
-  },
-  {
-    title: "PhD in Data Science",
-    company: "University of Waterloo",
-    country: "Canada",
-    jobType: "study",
-    salary: "Fully Funded",
-    description: "Research-intensive program focusing on data science, machine learning, and artificial intelligence. Work with world-renowned researchers.",
-    requirements: ["Master's Degree", "GPA 3.7+", "Research Experience", "GRE 325+"],
-    contactEmail: "gradadmissions@uwaterloo.ca",
-    programType: "PhD",
-    duration: "4-6 years",
-    tuitionFee: "Fully Funded",
-    applicationDeadline: new Date("2025-01-10"),
-    universityLogo: "https://images.unsplash.com/photo-1562774053-701939374585?w=100&h=100&fit=crop&crop=center",
-    universityWebsite: "https://www.uwaterloo.ca",
-    scholarships: true,
-    matchPercentage: 95,
-    featured: true,
-    seoTitle: "PhD in Data Science at University of Waterloo",
-    seoDescription: "Pursue your PhD in Data Science at one of Canada's top research universities.",
-    seoKeywords: ["phd", "data science", "waterloo", "canada", "research"]
-  }
-];
-
-const sampleTestimonials = [
-  {
-    name: "Sarah Johnson",
-    position: "Software Engineer",
-    company: "Google Canada",
-    country: "Canada",
-    testimonial: "Uddaan Consultancy helped me secure my dream job at Google. Their guidance throughout the application process was invaluable. I highly recommend their services!",
-    rating: 5,
-    image: "https://images.unsplash.com/photo-1494790108755-2616b612b786?w=100&h=100&fit=crop&crop=center",
-    featured: true,
-    order: 1
-  },
-  {
-    name: "Michael Chen",
-    position: "Graduate Student",
-    company: "University of Toronto",
-    country: "Canada",
-    testimonial: "Thanks to Uddaan, I got accepted into my dream Master's program. Their expertise in international education made the entire process smooth and stress-free.",
-    rating: 5,
-    image: "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=100&h=100&fit=crop&crop=center",
-    featured: true,
-    order: 2
-  },
-  {
-    name: "Emily Rodriguez",
-    position: "Business Analyst",
-    company: "RBC",
-    country: "Canada",
-    testimonial: "Uddaan's professional approach and attention to detail helped me navigate the complex Canadian job market. I'm now working in my field of choice!",
-    rating: 5,
-    image: "https://images.unsplash.com/photo-1438761681033-6461ffad8d80?w=100&h=100&fit=crop&crop=center",
-    featured: true,
-    order: 3
-  }
-];
-
-const sampleEvents = [
-  {
-    title: "Study Abroad Workshop",
-    description: "Learn everything you need to know about studying abroad in Canada. Get tips on applications, visas, and student life.",
-    shortDescription: "Comprehensive workshop on studying abroad in Canada",
-    eventType: "workshop",
-    startDate: new Date("2024-12-15T10:00:00"),
-    endDate: new Date("2024-12-15T16:00:00"),
-    location: "Toronto, Canada",
-    online: false,
-    meetingLink: "",
-    image: "https://images.unsplash.com/photo-1524178232363-1fb2b075b655?w=400&h=300&fit=crop&crop=center",
-    featured: true,
-    registrationRequired: true,
-    maxParticipants: 50,
-    currentParticipants: 25,
-    seoTitle: "Study Abroad Workshop - Toronto",
-    seoDescription: "Join our comprehensive workshop on studying abroad in Canada",
-    seoKeywords: ["study abroad", "workshop", "toronto", "canada", "education"]
-  },
-  {
-    title: "Job Market Trends Webinar",
-    description: "Stay updated with the latest trends in the Canadian job market. Learn about in-demand skills and career opportunities.",
-    shortDescription: "Latest trends in Canadian job market",
-    eventType: "webinar",
-    startDate: new Date("2024-12-20T14:00:00"),
-    endDate: new Date("2024-12-20T15:30:00"),
-    location: "Online",
-    online: true,
-    meetingLink: "https://zoom.us/j/123456789",
-    image: "https://images.unsplash.com/photo-1552664730-d307ca884978?w=400&h=300&fit=crop&crop=center",
-    featured: true,
-    registrationRequired: true,
-    maxParticipants: 100,
-    currentParticipants: 45,
-    seoTitle: "Canadian Job Market Trends Webinar",
-    seoDescription: "Learn about the latest trends in the Canadian job market",
-    seoKeywords: ["job market", "canada", "webinar", "career", "trends"]
-  }
-];
-
-const sampleSettings = [
-  {
-    key: "company_name",
-    value: "Uddaan Consultancy",
-    category: "company",
-    description: "Company name displayed on the website"
-  },
-  {
-    key: "company_description",
-    value: "Your Gateway to Global Opportunities - We help students and professionals find their dream opportunities worldwide through expert guidance and support.",
-    category: "company",
-    description: "Company description for SEO and display"
-  },
-  {
-    key: "contact_email",
-    value: "info@uddaanconsultancy.com",
-    category: "contact",
-    description: "Primary contact email"
-  },
-  {
-    key: "contact_phone",
-    value: "+1 (555) 123-4567",
-    category: "contact",
-    description: "Primary contact phone number"
-  },
-  {
-    key: "contact_address",
-    value: "123 Business Street, Toronto, ON, Canada",
-    category: "contact",
-    description: "Company address"
-  },
-  {
-    key: "seo_title",
-    value: "Uddaan Consultancy - Your Gateway to Global Opportunities",
-    category: "seo",
-    description: "Default SEO title"
-  },
-  {
-    key: "seo_description",
-    value: "Find your dream job or study opportunity worldwide with expert guidance from Uddaan Consultancy. Browse programs, apply online, and get professional support.",
-    category: "seo",
-    description: "Default SEO description"
-  },
-  {
-    key: "seo_keywords",
-    value: ["study abroad", "international education", "job opportunities", "canada", "immigration"],
-    category: "seo",
-    description: "Default SEO keywords"
-  }
-];
-
-async function seedData() {
+const seedDatabase = async () => {
   try {
-    console.log('🌱 Starting data seeding...');
+    // Connect to MongoDB
+    await mongoose.connect(process.env.MONGODB_URI || 'mongodb://127.0.0.1:27017/uddaan-consultancy');
+    console.log('Connected to MongoDB');
 
     // Clear existing data
-    await Job.deleteMany({});
-    await Testimonial.deleteMany({});
-    await Event.deleteMany({});
-    await Setting.deleteMany({});
+    await Promise.all([
+      User.deleteMany({}),
+      Role.deleteMany({}),
+      Job.deleteMany({}),
+      Page.deleteMany({}),
+      Setting.deleteMany({}),
+      Theme.deleteMany({}),
+      Event.deleteMany({}),
+      Testimonial.deleteMany({})
+    ]);
+    console.log('Cleared existing data');
 
-    console.log('🗑️ Cleared existing data');
+    // Create Roles
+    const roles = await Role.insertMany([
+      {
+        name: 'Super Admin',
+        description: 'Full system access with all permissions',
+        permissions: ['all'],
+        isSystem: true
+      },
+      {
+        name: 'Admin',
+        description: 'Administrative access to most features',
+        permissions: [
+          'dashboard.view', 'jobs.create', 'jobs.read', 'jobs.update', 'jobs.delete',
+          'applications.read', 'applications.update', 'events.create', 'events.read',
+          'events.update', 'testimonials.create', 'testimonials.read', 'testimonials.update',
+          'media.upload', 'media.read', 'settings.read', 'users.read'
+        ],
+        isSystem: true
+      },
+      {
+        name: 'Editor',
+        description: 'Content management and editing capabilities',
+        permissions: [
+          'dashboard.view', 'jobs.read', 'jobs.update', 'applications.read',
+          'events.read', 'events.update', 'testimonials.read', 'testimonials.update',
+          'pages.create', 'pages.read', 'pages.update', 'media.upload', 'media.read'
+        ],
+        isSystem: true
+      },
+      {
+        name: 'Viewer',
+        description: 'Read-only access to most features',
+        permissions: [
+          'dashboard.view', 'jobs.read', 'applications.read', 'events.read',
+          'testimonials.read', 'pages.read', 'media.read'
+        ],
+        isSystem: true
+      }
+    ]);
+    console.log('Created roles');
 
-    // Insert sample data
-    await Job.insertMany(sampleJobs);
-    console.log('✅ Jobs seeded');
+    // Create Users
+    const hashedPassword = await bcrypt.hash('uddaan123', 12);
+    const users = await User.insertMany([
+      {
+        name: 'Super Admin',
+        email: 'admin@uddaan.com',
+        password: hashedPassword,
+        roleId: roles[0]._id,
+        isActive: true,
+        phone: '+977-1-4444444'
+      },
+      {
+        name: 'Content Manager',
+        email: 'content@uddaan.com',
+        password: hashedPassword,
+        roleId: roles[2]._id,
+        isActive: true,
+        phone: '+977-1-4444445'
+      }
+    ]);
+    console.log('Created users');
 
-    await Testimonial.insertMany(sampleTestimonials);
-    console.log('✅ Testimonials seeded');
+    // Create Sample Jobs
+    const jobs = await Job.insertMany([
+      {
+        title: 'Software Engineer - Dubai',
+        company: 'Tech Solutions UAE',
+        country: 'UAE',
+        city: 'Dubai',
+        jobType: 'Full-time',
+        programType: 'Professional',
+        salaryRange: 'AED 8,000 - 12,000',
+        description: 'Join our dynamic team as a Software Engineer in Dubai. Work on cutting-edge projects with the latest technologies.',
+        requirements: ['Bachelor\'s in Computer Science', '3+ years experience', 'JavaScript, React, Node.js', 'English proficiency'],
+        benefits: ['Health Insurance', 'Annual Leave', 'Professional Development', 'Visa Sponsorship'],
+        contactEmail: 'jobs@techsolutions.ae',
+        isActive: true,
+        featured: true,
+        createdBy: users[0]._id,
+        seoKeywords: ['software engineer', 'dubai jobs', 'tech jobs', 'programming']
+      },
+      {
+        title: 'Nurse - Qatar',
+        company: 'Qatar Medical Center',
+        country: 'Qatar',
+        city: 'Doha',
+        jobType: 'Full-time',
+        programType: 'Healthcare',
+        salaryRange: 'QAR 6,000 - 9,000',
+        description: 'Experienced nurses needed for our state-of-the-art medical facility in Doha.',
+        requirements: ['Nursing Degree', 'License', '2+ years experience', 'Arabic/English'],
+        benefits: ['Accommodation', 'Transportation', 'Health Insurance', 'Annual Bonus'],
+        contactEmail: 'hr@qmc.qa',
+        isActive: true,
+        featured: false,
+        createdBy: users[0]._id,
+        seoKeywords: ['nurse jobs', 'qatar healthcare', 'medical jobs', 'doha']
+      },
+      {
+        title: 'Construction Worker - Saudi Arabia',
+        company: 'Gulf Construction Co.',
+        country: 'Saudi Arabia',
+        city: 'Riyadh',
+        jobType: 'Contract',
+        programType: 'Construction',
+        salaryRange: 'SAR 2,500 - 4,000',
+        description: 'Skilled construction workers needed for major infrastructure projects in Riyadh.',
+        requirements: ['Construction experience', 'Physical fitness', 'Safety certification'],
+        benefits: ['Accommodation', 'Food allowance', 'Overtime pay', 'Return ticket'],
+        contactEmail: 'jobs@gulfconstruction.sa',
+        isActive: true,
+        featured: false,
+        createdBy: users[0]._id,
+        seoKeywords: ['construction jobs', 'saudi arabia', 'riyadh jobs', 'labor']
+      }
+    ]);
+    console.log('Created sample jobs');
 
-    await Event.insertMany(sampleEvents);
-    console.log('✅ Events seeded');
+    // Create Sample Events
+    const events = await Event.insertMany([
+      {
+        title: 'Job Fair - Gulf Opportunities 2024',
+        description: 'Connect with top employers from UAE, Qatar, Saudi Arabia, and other Gulf countries.',
+        venue: 'Kathmandu Convention Center',
+        startDate: new Date('2024-03-15T09:00:00Z'),
+        endDate: new Date('2024-03-15T17:00:00Z'),
+        eventType: 'Job Fair',
+        capacity: 500,
+        ticketPrice: 0,
+        isActive: true,
+        featured: true,
+        createdBy: users[0]._id
+      },
+      {
+        title: 'Visa Process Workshop',
+        description: 'Learn about visa requirements and application processes for Gulf countries.',
+        venue: 'Uddaan Office',
+        startDate: new Date('2024-03-20T14:00:00Z'),
+        endDate: new Date('2024-03-20T16:00:00Z'),
+        eventType: 'Workshop',
+        capacity: 50,
+        ticketPrice: 500,
+        isActive: true,
+        featured: false,
+        createdBy: users[0]._id
+      }
+    ]);
+    console.log('Created sample events');
 
-    await Setting.insertMany(sampleSettings);
-    console.log('✅ Settings seeded');
+    // Create Sample Testimonials
+    const testimonials = await Testimonial.insertMany([
+      {
+        name: 'Raj Kumar Sharma',
+        position: 'Software Engineer',
+        company: 'Dubai Tech Solutions',
+        content: 'Uddaan Consultancy helped me land my dream job in Dubai. Their support throughout the visa process was exceptional.',
+        rating: 5,
+        image: 'testimonial-1.jpg',
+        isActive: true,
+        featured: true,
+        order: 1
+      },
+      {
+        name: 'Sita Devi Patel',
+        position: 'Registered Nurse',
+        company: 'Qatar Medical Center',
+        content: 'Professional service and genuine guidance. I highly recommend Uddaan for anyone looking to work abroad.',
+        rating: 5,
+        image: 'testimonial-2.jpg',
+        isActive: true,
+        featured: true,
+        order: 2
+      },
+      {
+        name: 'Krishna Bahadur Thapa',
+        position: 'Construction Supervisor',
+        company: 'Saudi Construction Ltd',
+        content: 'Thanks to Uddaan, I got a great job in Saudi Arabia with excellent salary and benefits.',
+        rating: 5,
+        image: 'testimonial-3.jpg',
+        isActive: true,
+        featured: false,
+        order: 3
+      }
+    ]);
+    console.log('Created sample testimonials');
 
-    console.log('🎉 Data seeding completed successfully!');
-    console.log(`📊 Seeded ${sampleJobs.length} jobs, ${sampleTestimonials.length} testimonials, ${sampleEvents.length} events, and ${sampleSettings.length} settings`);
+    // Create Sample Pages
+    const pages = await Page.insertMany([
+      {
+        slug: 'about',
+        title: 'About Uddaan Consultancy',
+        body: '<h1>About Uddaan Consultancy</h1><p>We are a leading consultancy firm helping Nepali professionals find opportunities in Gulf countries.</p>',
+        metaTitle: 'About Us - Uddaan Consultancy',
+        metaDescription: 'Learn about Uddaan Consultancy, your trusted partner for Gulf employment opportunities.',
+        status: 'published',
+        authorId: users[0]._id,
+        publishedAt: new Date(),
+        seoKeywords: ['about uddaan', 'consultancy nepal', 'gulf jobs'],
+        language: 'en'
+      },
+      {
+        slug: 'services',
+        title: 'Our Services',
+        body: '<h1>Our Services</h1><p>We offer comprehensive services including job placement, visa assistance, and career guidance.</p>',
+        metaTitle: 'Services - Uddaan Consultancy',
+        metaDescription: 'Explore our comprehensive services for Gulf employment and career development.',
+        status: 'published',
+        authorId: users[0]._id,
+        publishedAt: new Date(),
+        seoKeywords: ['services', 'job placement', 'visa assistance'],
+        language: 'en'
+      }
+    ]);
+    console.log('Created sample pages');
+
+    // Create Settings
+    const settings = await Setting.insertMany([
+      {
+        key: 'site_title',
+        value: 'Uddaan Consultancy - Your Gateway to Gulf Opportunities',
+        category: 'general',
+        description: 'Main site title',
+        isPublic: true
+      },
+      {
+        key: 'site_description',
+        value: 'Leading consultancy firm connecting Nepali professionals with opportunities in Gulf countries.',
+        category: 'general',
+        description: 'Site description for SEO',
+        isPublic: true
+      },
+      {
+        key: 'contact_email',
+        value: 'info@uddaanconsultancy.com',
+        category: 'contact',
+        description: 'Main contact email',
+        isPublic: true
+      },
+      {
+        key: 'contact_phone',
+        value: '+977-1-4444444',
+        category: 'contact',
+        description: 'Main contact phone',
+        isPublic: true
+      },
+      {
+        key: 'office_address',
+        value: 'New Baneshwor, Kathmandu, Nepal',
+        category: 'contact',
+        description: 'Office address',
+        isPublic: true
+      },
+      {
+        key: 'facebook_url',
+        value: 'https://facebook.com/uddaanconsultancy',
+        category: 'social',
+        description: 'Facebook page URL',
+        isPublic: true
+      },
+      {
+        key: 'instagram_url',
+        value: 'https://instagram.com/uddaanconsultancy',
+        category: 'social',
+        description: 'Instagram page URL',
+        isPublic: true
+      },
+      {
+        key: 'linkedin_url',
+        value: 'https://linkedin.com/company/uddaanconsultancy',
+        category: 'social',
+        description: 'LinkedIn page URL',
+        isPublic: true
+      },
+      {
+        key: 'google_analytics_id',
+        value: 'GA-XXXXXXXXX',
+        category: 'analytics',
+        description: 'Google Analytics tracking ID',
+        isPublic: false
+      },
+      {
+        key: 'max_applications_per_day',
+        value: '10',
+        category: 'limits',
+        description: 'Maximum applications per day per IP',
+        isPublic: false
+      }
+    ]);
+    console.log('Created settings');
+
+    // Create Default Theme
+    const theme = await Theme.create({
+      name: 'Default',
+      colors: {
+        primary: '#3B82F6',
+        secondary: '#10B981',
+        accent: '#F59E0B',
+        background: '#FFFFFF',
+        surface: '#F9FAFB',
+        text: '#111827',
+        textSecondary: '#6B7280'
+      },
+      fonts: {
+        primary: 'Inter',
+        secondary: 'Inter',
+        sizes: {
+          xs: '0.75rem',
+          sm: '0.875rem',
+          base: '1rem',
+          lg: '1.125rem',
+          xl: '1.25rem',
+          '2xl': '1.5rem',
+          '3xl': '1.875rem'
+        }
+      },
+      spacing: {
+        xs: '0.25rem',
+        sm: '0.5rem',
+        md: '1rem',
+        lg: '1.5rem',
+        xl: '3rem'
+      },
+      isActive: true,
+      darkMode: {
+        enabled: true,
+        colors: {
+          primary: '#60A5FA',
+          background: '#111827',
+          surface: '#1F2937',
+          text: '#F9FAFB'
+        }
+      }
+    });
+    console.log('Created default theme');
+
+    console.log('✅ Database seeded successfully!');
+    console.log('\n📊 Summary:');
+    console.log(`- Roles: ${roles.length}`);
+    console.log(`- Users: ${users.length}`);
+    console.log(`- Jobs: ${jobs.length}`);
+    console.log(`- Events: ${events.length}`);
+    console.log(`- Testimonials: ${testimonials.length}`);
+    console.log(`- Pages: ${pages.length}`);
+    console.log(`- Settings: ${settings.length}`);
+    console.log(`- Theme: 1`);
+    
+    console.log('\n🔐 Admin Credentials:');
+    console.log('Email: admin@uddaan.com');
+    console.log('Password: uddaan123');
+    
+    console.log('\n🌐 Access URLs:');
+    console.log('Frontend: http://localhost:3000');
+    console.log('Admin Panel: http://localhost:3000/secure-admin-access-2024');
+    console.log('API Health: http://localhost:5000/api/health');
 
   } catch (error) {
-    console.error('❌ Error seeding data:', error);
+    console.error('❌ Error seeding database:', error);
   } finally {
-    mongoose.connection.close();
+    mongoose.disconnect();
   }
-}
+};
 
-// Run the seeding
-seedData(); 
+seedDatabase();

@@ -1,20 +1,31 @@
+
 {
   "name": "uddaan-consultancy-frontend",
   "version": "1.0.0",
-  "description": "Frontend for Uddaan Consultancy",
-  "private": true,
+  "description": "Enterprise-grade frontend for Uddaan Consultancy",
   "dependencies": {
-    "axios": "^1.6.2",
-    "clsx": "^2.0.0",
-    "framer-motion": "^12.23.12",
-    "lucide-react": "^0.294.0",
+    "@testing-library/jest-dom": "^5.17.0",
+    "@testing-library/react": "^13.4.0",
+    "@testing-library/user-event": "^13.5.0",
     "react": "^18.2.0",
     "react-dom": "^18.2.0",
-    "react-hook-form": "^7.48.2",
-    "react-hot-toast": "^2.4.1",
-    "react-router-dom": "^6.20.1",
+    "react-router-dom": "^6.17.0",
     "react-scripts": "5.0.1",
-    "tailwind-merge": "^2.0.0"
+    "web-vitals": "^2.1.4",
+    "lucide-react": "^0.292.0",
+    "recharts": "^2.8.0",
+    "date-fns": "^2.30.0",
+    "react-hook-form": "^7.47.0",
+    "react-hot-toast": "^2.4.1",
+    "react-dnd": "^16.0.1",
+    "react-dnd-html5-backend": "^16.0.1",
+    "framer-motion": "^10.16.4",
+    "react-select": "^5.8.0",
+    "react-datepicker": "^4.21.0",
+    "react-dropzone": "^14.2.3",
+    "axios": "^1.6.0",
+    "classnames": "^2.3.2",
+    "lodash": "^4.17.21"
   },
   "scripts": {
     "start": "react-scripts start",
@@ -22,7 +33,12 @@
     "test": "react-scripts test",
     "eject": "react-scripts eject"
   },
-  "proxy": "http://localhost:5000",
+  "eslintConfig": {
+    "extends": [
+      "react-app",
+      "react-app/jest"
+    ]
+  },
   "browserslist": {
     "production": [
       ">0.2%",
@@ -35,10 +51,5 @@
       "last 1 safari version"
     ]
   },
-  "devDependencies": {
-    "@babel/plugin-proposal-private-property-in-object": "^7.21.11",
-    "autoprefixer": "^10.4.16",
-    "postcss": "^8.4.32",
-    "tailwindcss": "^3.3.6"
-  }
+  "proxy": "http://localhost:5000"
 }

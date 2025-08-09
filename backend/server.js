@@ -1,3 +1,4 @@
+
 const express = require('express');
 const mongoose = require('mongoose');
 const cors = require('cors');
@@ -9,6 +10,10 @@ const crypto = require('crypto');
 const bcrypt = require('bcrypt');
 const jwt = require('jsonwebtoken');
 const fs = require('fs');
+const speakeasy = require('speakeasy');
+const QRCode = require('qrcode');
+const nodemailer = require('nodemailer');
+const sharp = require('sharp');
 require('dotenv').config();
 
 const app = express();
@@ -53,14 +58,14 @@ const adminLimiter = rateLimit({
   message: 'Too many admin requests, please try again later.',
 });
 
-// MongoDB Connection with enhanced options
+// MongoDB Connection
 mongoose.connect(process.env.MONGODB_URI || 'mongodb://127.0.0.1:27017/uddaan-consultancy', {
   useNewUrlParser: true,
   useUnifiedTopology: true,
 })
 .then(() => {
   console.log('✅ Connected to MongoDB');
-  initializeAdminUser();
+  initializeSystem();
 })
 .catch(err => console.error('❌ MongoDB connection error:', err));
 
@@ -68,6 +73,13 @@ mongoose.connect(process.env.MONGODB_URI || 'mongodb://127.0.0.1:27017/uddaan-co
 const Job = require('./models/Job');
 const Application = require('./models/Application');
 const Admin = require('./models/Admin');
+const User = require('./models/User');
+const Role = require('./models/Role');
+const Page = require('./models/Page');
+const Media = require('./models/Media');
+const AuditLog = require('./models/AuditLog');
+const Theme = require('./models/Theme');
+const Consultation = require('./models/Consultation');
 const Testimonial = require('./models/Testimonial');
 const Event = require('./models/Event');
 const Setting = require('./models/Setting');
@@ -103,6 +115,41 @@ const upload = multer({
   }
 });
 
+// Email configuration
+const transporter = nodemailer.createTransporter({
+  host: process.env.SMTP_HOST || 'smtp.gmail.com',
+  port: process.env.SMTP_PORT || 587,
+  secure: false,
+  auth: {
+    user: process.env.SMTP_USER,
+    pass: process.env.SMTP_PASS
+  }
+});
+
+// Audit logging middleware
+const auditLogger = (action, model) => {
+  return async (req, res, next) => {
+    const originalSend = res.send;
+    res.send = function(data) {
+      // Log the action after response
+      if (res.statusCode < 400) {
+        AuditLog.create({
+          userId: req.user?._id,
+          action,
+          model,
+          modelId: req.params.id || 'bulk',
+          changes: req.body,
+          ipAddress: req.ip,
+          userAgent: req.get('user-agent'),
+          severity: action === 'delete' ? 'high' : 'low'
+        }).catch(console.error);
+      }
+      originalSend.call(this, data);
+    };
+    next();
+  };
+};
+
 // Enhanced authentication middleware
 const authenticateAdmin = async (req, res, next) => {
   try {
@@ -113,37 +160,93 @@ const authenticateAdmin = async (req, res, next) => {
     }
 
     const decoded = jwt.verify(token, process.env.JWT_SECRET || 'uddaan-super-secret-key-2024');
-    const admin = await Admin.findById(decoded.id).select('-password');
+    const user = await User.findById(decoded.id).populate('roleId').select('-password');
 
-    if (!admin || !admin.isActive) {
-      return res.status(401).json({ message: 'Invalid token or admin deactivated.' });
+    if (!user || !user.isActive) {
+      return res.status(401).json({ message: 'Invalid token or user deactivated.' });
     }
 
-    req.admin = admin;
+    req.user = user;
     next();
   } catch (error) {
     return res.status(401).json({ message: 'Invalid token.' });
   }
 };
 
-// Initialize default admin user
-const initializeAdminUser = async () => {
+// Permission middleware
+const requirePermission = (permission) => {
+  return (req, res, next) => {
+    if (!req.user) {
+      return res.status(401).json({ message: 'Authentication required' });
+    }
+
+    const userPermissions = req.user.roleId.permissions;
+    if (userPermissions.includes('all') || userPermissions.includes(permission)) {
+      next();
+    } else {
+      res.status(403).json({ message: 'Insufficient permissions' });
+    }
+  };
+};
+
+// Initialize system data
+const initializeSystem = async () => {
   try {
-    const adminExists = await Admin.findOne({ email: 'admin@uddaan.com' });
+    // Create default roles
+    const superAdminRole = await Role.findOneAndUpdate(
+      { name: 'Super Admin' },
+      {
+        name: 'Super Admin',
+        description: 'Full system access',
+        permissions: ['all'],
+        isSystem: true
+      },
+      { upsert: true, new: true }
+    );
+
+    const adminRole = await Role.findOneAndUpdate(
+      { name: 'Admin' },
+      {
+        name: 'Admin',
+        description: 'Administrative access',
+        permissions: [
+          'dashboard.view', 'jobs.create', 'jobs.read', 'jobs.update', 'jobs.delete',
+          'applications.read', 'applications.update', 'events.create', 'events.read',
+          'events.update', 'testimonials.create', 'testimonials.read', 'testimonials.update',
+          'media.upload', 'media.read', 'settings.read'
+        ],
+        isSystem: true
+      },
+      { upsert: true, new: true }
+    );
+
+    // Create default admin user
+    const adminExists = await User.findOne({ email: 'admin@uddaan.com' });
     if (!adminExists) {
       const hashedPassword = await bcrypt.hash('uddaan123', 12);
-      const admin = new Admin({
+      const admin = new User({
         email: 'admin@uddaan.com',
         password: hashedPassword,
         name: 'Super Admin',
-        role: 'super_admin',
-        permissions: ['all']
+        roleId: superAdminRole._id
       });
       await admin.save();
       console.log('✅ Default admin user created');
     }
+
+    // Create default theme
+    const defaultTheme = await Theme.findOneAndUpdate(
+      { name: 'Default' },
+      {
+        name: 'Default',
+        isActive: true
+      },
+      { upsert: true, new: true }
+    );
+
+    console.log('✅ System initialized');
   } catch (error) {
-    console.error('❌ Error creating admin user:', error);
+    console.error('❌ Error initializing system:', error);
   }
 };
 
@@ -224,12 +327,11 @@ app.get('/api/jobs/:id', async (req, res) => {
   }
 });
 
-// Submit application with enhanced validation
+// Submit application
 app.post('/api/applications', upload.single('resume'), async (req, res) => {
   try {
     const { jobId, name, email, phone, coverLetter } = req.body;
 
-    // Validate required fields
     if (!jobId || !name || !email || !phone) {
       return res.status(400).json({ 
         success: false, 
@@ -237,7 +339,6 @@ app.post('/api/applications', upload.single('resume'), async (req, res) => {
       });
     }
 
-    // Check if job exists
     const job = await Job.findById(jobId);
     if (!job) {
       return res.status(404).json({ success: false, message: 'Job not found' });
@@ -256,14 +357,42 @@ app.post('/api/applications', upload.single('resume'), async (req, res) => {
     });
 
     await application.save();
-
-    // Update job application count
     await Job.findByIdAndUpdate(jobId, { $inc: { applications: 1 } });
 
     res.status(201).json({ 
       success: true,
       message: 'Application submitted successfully!',
       applicationId: application._id 
+    });
+  } catch (error) {
+    res.status(500).json({ success: false, message: 'Server error', error: error.message });
+  }
+});
+
+// Submit consultation booking
+app.post('/api/consultations', async (req, res) => {
+  try {
+    const { name, email, phone, consultationType, preferredDate, preferredTime, message } = req.body;
+
+    const bookingId = 'CON-' + Date.now() + '-' + Math.random().toString(36).substr(2, 5).toUpperCase();
+
+    const consultation = new Consultation({
+      bookingId,
+      clientName: name,
+      clientEmail: email,
+      clientPhone: phone,
+      consultationType,
+      preferredDate: new Date(preferredDate),
+      preferredTime,
+      message
+    });
+
+    await consultation.save();
+
+    res.status(201).json({
+      success: true,
+      message: 'Consultation booked successfully!',
+      bookingId
     });
   } catch (error) {
     res.status(500).json({ success: false, message: 'Server error', error: error.message });
@@ -301,46 +430,21 @@ app.get('/api/events', async (req, res) => {
   }
 });
 
-// Get public settings
-app.get('/api/settings', async (req, res) => {
+// Get pages
+app.get('/api/pages/:slug', async (req, res) => {
   try {
-    const settings = await Setting.find({ isPublic: true }).lean();
-    const settingsObj = {};
-    settings.forEach(setting => {
-      settingsObj[setting.key] = setting.value;
-    });
-    res.json({ success: true, settings: settingsObj });
-  } catch (error) {
-    res.status(500).json({ success: false, message: 'Server error', error: error.message });
-  }
-});
-
-// Enhanced AI Chat endpoint
-app.post('/api/ai/chat', async (req, res) => {
-  try {
-    const { message } = req.body;
-    const text = (message || '').toLowerCase();
-
-    let reply = 'Hello! I\'m here to help you with jobs, consultation booking, and visa guidance. What would you like to know?';
-
-    if (text.includes('job') || text.includes('vacancy') || text.includes('work')) {
-      reply = 'We have exciting job opportunities in Gulf countries including UAE, Qatar, Saudi Arabia, Kuwait, Oman, and Bahrain. You can browse our Jobs page and filter by country, job type, or search for specific positions. Would you like me to help you find something specific?';
-    } else if (text.includes('consult') || text.includes('book') || text.includes('appointment')) {
-      reply = 'You can schedule a personalized 1:1 consultation with our experts from the Consultation page. Choose a convenient date and time, and we\'ll provide guidance tailored to your career goals!';
-    } else if (text.includes('visa') || text.includes('document')) {
-      reply = 'We provide comprehensive visa assistance including documentation, process guidance, and support throughout your application. Our team helps with visa requirements for all Gulf countries after your job application is accepted.';
-    } else if (text.includes('contact') || text.includes('support') || text.includes('help')) {
-      reply = 'You can reach us through multiple channels: Visit our Contact page, call us at +977-1-4444444, email us at info@uddaanconsultancy.com, or use this chat for immediate assistance!';
-    } else if (text.includes('study') || text.includes('education') || text.includes('university')) {
-      reply = 'We also assist with study abroad opportunities! Browse our educational programs and university partnerships. We can help with admissions, scholarships, and student visa processes.';
+    const page = await Page.findOne({ 
+      slug: req.params.slug, 
+      status: 'published' 
+    }).populate('authorId', 'name').lean();
+    
+    if (!page) {
+      return res.status(404).json({ success: false, message: 'Page not found' });
     }
 
-    res.json({ success: true, reply });
+    res.json({ success: true, page });
   } catch (error) {
-    res.status(500).json({ 
-      success: false, 
-      reply: 'Sorry, I encountered an issue. Please try again or contact our support team.' 
-    });
+    res.status(500).json({ success: false, message: 'Server error', error: error.message });
   }
 });
 
@@ -349,42 +453,75 @@ app.post('/api/ai/chat', async (req, res) => {
 // Enhanced admin login
 app.post('/api/admin/login', adminLimiter, async (req, res) => {
   try {
-    const { email, password } = req.body;
+    const { email, password, mfaToken } = req.body;
 
     if (!email || !password) {
       return res.status(400).json({ success: false, message: 'Email and password are required' });
     }
 
-    const admin = await Admin.findOne({ email, isActive: true });
-    if (!admin) {
+    const user = await User.findOne({ email, isActive: true }).populate('roleId');
+    if (!user) {
       return res.status(401).json({ success: false, message: 'Invalid credentials' });
     }
 
-    const isValidPassword = await bcrypt.compare(password, admin.password);
+    const isValidPassword = await bcrypt.compare(password, user.password);
     if (!isValidPassword) {
       return res.status(401).json({ success: false, message: 'Invalid credentials' });
     }
 
+    // Check MFA if enabled
+    if (user.mfaEnabled) {
+      if (!mfaToken) {
+        return res.status(200).json({ 
+          success: false, 
+          message: 'MFA token required',
+          requiresMFA: true 
+        });
+      }
+
+      const verified = speakeasy.totp.verify({
+        secret: user.mfaSecret,
+        encoding: 'base32',
+        token: mfaToken,
+        window: 2
+      });
+
+      if (!verified) {
+        return res.status(401).json({ success: false, message: 'Invalid MFA token' });
+      }
+    }
+
     const token = jwt.sign(
-      { id: admin._id, email: admin.email, role: admin.role },
+      { id: user._id, email: user.email, roleId: user.roleId._id },
       process.env.JWT_SECRET || 'uddaan-super-secret-key-2024',
       { expiresIn: '24h' }
     );
 
-    // Update last login
-    admin.lastLogin = new Date();
-    await admin.save();
+    user.lastLogin = new Date();
+    await user.save();
+
+    // Log login
+    await AuditLog.create({
+      userId: user._id,
+      action: 'login',
+      model: 'User',
+      modelId: user._id.toString(),
+      ipAddress: req.ip,
+      userAgent: req.get('user-agent'),
+      severity: 'low'
+    });
 
     res.json({ 
       success: true,
       message: 'Login successful',
       token,
-      admin: {
-        id: admin._id,
-        name: admin.name,
-        email: admin.email,
-        role: admin.role,
-        permissions: admin.permissions
+      user: {
+        id: user._id,
+        name: user.name,
+        email: user.email,
+        role: user.roleId.name,
+        permissions: user.roleId.permissions,
+        mfaEnabled: user.mfaEnabled
       }
     });
   } catch (error) {
@@ -392,8 +529,55 @@ app.post('/api/admin/login', adminLimiter, async (req, res) => {
   }
 });
 
+// Setup MFA
+app.post('/api/admin/mfa/setup', authenticateAdmin, async (req, res) => {
+  try {
+    const secret = speakeasy.generateSecret({
+      name: `Uddaan Consultancy (${req.user.email})`,
+      issuer: 'Uddaan Consultancy'
+    });
+
+    const qrCodeUrl = await QRCode.toDataURL(secret.otpauth_url);
+
+    res.json({
+      success: true,
+      secret: secret.base32,
+      qrCode: qrCodeUrl
+    });
+  } catch (error) {
+    res.status(500).json({ success: false, message: 'Server error', error: error.message });
+  }
+});
+
+// Verify and enable MFA
+app.post('/api/admin/mfa/verify', authenticateAdmin, async (req, res) => {
+  try {
+    const { secret, token } = req.body;
+
+    const verified = speakeasy.totp.verify({
+      secret,
+      encoding: 'base32',
+      token,
+      window: 2
+    });
+
+    if (!verified) {
+      return res.status(400).json({ success: false, message: 'Invalid token' });
+    }
+
+    await User.findByIdAndUpdate(req.user._id, {
+      mfaSecret: secret,
+      mfaEnabled: true
+    });
+
+    res.json({ success: true, message: 'MFA enabled successfully' });
+  } catch (error) {
+    res.status(500).json({ success: false, message: 'Server error', error: error.message });
+  }
+});
+
 // Enhanced dashboard statistics
-app.get('/api/admin/dashboard', authenticateAdmin, async (req, res) => {
+app.get('/api/admin/dashboard', authenticateAdmin, requirePermission('dashboard.view'), async (req, res) => {
   try {
     const [
       totalJobs,
@@ -403,9 +587,13 @@ app.get('/api/admin/dashboard', authenticateAdmin, async (req, res) => {
       totalTestimonials,
       totalEvents,
       upcomingEvents,
+      totalConsultations,
+      pendingConsultations,
+      totalUsers,
       recentApplications,
       topJobs,
-      monthlyStats
+      monthlyStats,
+      recentAuditLogs
     ] = await Promise.all([
       Job.countDocuments(),
       Job.countDocuments({ isActive: true }),
@@ -414,16 +602,22 @@ app.get('/api/admin/dashboard', authenticateAdmin, async (req, res) => {
       Testimonial.countDocuments(),
       Event.countDocuments(),
       Event.countDocuments({ startDate: { $gte: new Date() }, isActive: true }),
+      Consultation.countDocuments(),
+      Consultation.countDocuments({ status: 'pending' }),
+      User.countDocuments({ isActive: true }),
       Application.find().populate('jobId').sort({ createdAt: -1 }).limit(10).lean(),
       Job.find({ isActive: true }).sort({ applications: -1, views: -1 }).limit(10).lean(),
-      getMonthlyStats()
+      getMonthlyStats(),
+      AuditLog.find().populate('userId', 'name').sort({ createdAt: -1 }).limit(20).lean()
     ]);
 
     const stats = {
       jobs: { total: totalJobs, active: activeJobs },
       applications: { total: totalApplications, new: newApplications },
       testimonials: { total: totalTestimonials },
-      events: { total: totalEvents, upcoming: upcomingEvents }
+      events: { total: totalEvents, upcoming: upcomingEvents },
+      consultations: { total: totalConsultations, pending: pendingConsultations },
+      users: { total: totalUsers }
     };
 
     res.json({
@@ -431,7 +625,8 @@ app.get('/api/admin/dashboard', authenticateAdmin, async (req, res) => {
       stats,
       recentApplications,
       topJobs,
-      monthlyStats
+      monthlyStats,
+      recentAuditLogs
     });
   } catch (error) {
     res.status(500).json({ success: false, message: 'Server error', error: error.message });
@@ -457,148 +652,47 @@ const getMonthlyStats = async () => {
     { $sort: { '_id.year': 1, '_id.month': 1 } }
   ];
 
-  const [jobStats, applicationStats] = await Promise.all([
+  const [jobStats, applicationStats, consultationStats] = await Promise.all([
     Job.aggregate(pipeline),
-    Application.aggregate(pipeline)
+    Application.aggregate(pipeline),
+    Consultation.aggregate(pipeline)
   ]);
 
-  return { jobs: jobStats, applications: applicationStats };
+  return { jobs: jobStats, applications: applicationStats, consultations: consultationStats };
 };
 
-// Job Management Routes
-app.get('/api/admin/jobs', authenticateAdmin, async (req, res) => {
+// User Management Routes
+app.get('/api/admin/users', authenticateAdmin, requirePermission('users.read'), async (req, res) => {
   try {
-    const { page = 1, limit = 20, search, status, sortBy = 'createdAt', sortOrder = 'desc' } = req.query;
+    const { page = 1, limit = 20, search, roleId } = req.query;
 
     let query = {};
-    if (search) {
-      query.$or = [
-        { title: { $regex: search, $options: 'i' } },
-        { company: { $regex: search, $options: 'i' } }
-      ];
-    }
-    if (status) query.isActive = status === 'active';
-
-    const skip = (page - 1) * parseInt(limit);
-    const sortObj = {};
-    sortObj[sortBy] = sortOrder === 'desc' ? -1 : 1;
-
-    const jobs = await Job.find(query)
-      .sort(sortObj)
-      .skip(skip)
-      .limit(parseInt(limit))
-      .lean();
-
-    const total = await Job.countDocuments(query);
-
-    res.json({
-      success: true,
-      jobs,
-      pagination: {
-        current: parseInt(page),
-        total: Math.ceil(total / limit),
-        totalJobs: total
-      }
-    });
-  } catch (error) {
-    res.status(500).json({ success: false, message: 'Server error', error: error.message });
-  }
-});
-
-app.post('/api/admin/jobs', authenticateAdmin, upload.single('universityLogo'), async (req, res) => {
-  try {
-    const jobData = { ...req.body };
-    if (req.file) jobData.universityLogo = req.file.filename;
-
-    // Parse arrays if they come as strings
-    if (typeof jobData.requirements === 'string') {
-      jobData.requirements = jobData.requirements.split(',').map(req => req.trim());
-    }
-    if (typeof jobData.seoKeywords === 'string') {
-      jobData.seoKeywords = jobData.seoKeywords.split(',').map(keyword => keyword.trim());
-    }
-
-    const job = new Job(jobData);
-    await job.save();
-
-    res.status(201).json({ success: true, message: 'Job created successfully', job });
-  } catch (error) {
-    res.status(400).json({ success: false, message: 'Validation error', error: error.message });
-  }
-});
-
-app.put('/api/admin/jobs/:id', authenticateAdmin, upload.single('universityLogo'), async (req, res) => {
-  try {
-    const updateData = { ...req.body };
-    if (req.file) updateData.universityLogo = req.file.filename;
-
-    // Parse arrays if they come as strings
-    if (typeof updateData.requirements === 'string') {
-      updateData.requirements = updateData.requirements.split(',').map(req => req.trim());
-    }
-    if (typeof updateData.seoKeywords === 'string') {
-      updateData.seoKeywords = updateData.seoKeywords.split(',').map(keyword => keyword.trim());
-    }
-
-    const job = await Job.findByIdAndUpdate(req.params.id, updateData, { 
-      new: true, 
-      runValidators: true 
-    });
-
-    if (!job) {
-      return res.status(404).json({ success: false, message: 'Job not found' });
-    }
-
-    res.json({ success: true, message: 'Job updated successfully', job });
-  } catch (error) {
-    res.status(400).json({ success: false, message: 'Update error', error: error.message });
-  }
-});
-
-app.delete('/api/admin/jobs/:id', authenticateAdmin, async (req, res) => {
-  try {
-    const job = await Job.findByIdAndDelete(req.params.id);
-    if (!job) {
-      return res.status(404).json({ success: false, message: 'Job not found' });
-    }
-    res.json({ success: true, message: 'Job deleted successfully' });
-  } catch (error) {
-    res.status(500).json({ success: false, message: 'Server error', error: error.message });
-  }
-});
-
-// Application Management Routes
-app.get('/api/admin/applications', authenticateAdmin, async (req, res) => {
-  try {
-    const { status, jobId, page = 1, limit = 20, search } = req.query;
-    let query = {};
-
-    if (status) query.status = status;
-    if (jobId) query.jobId = jobId;
     if (search) {
       query.$or = [
         { name: { $regex: search, $options: 'i' } },
         { email: { $regex: search, $options: 'i' } }
       ];
     }
+    if (roleId) query.roleId = roleId;
 
     const skip = (page - 1) * parseInt(limit);
-    const applications = await Application.find(query)
-      .populate('jobId', 'title company country')
+    const users = await User.find(query)
+      .populate('roleId', 'name permissions')
+      .select('-password -mfaSecret')
       .sort({ createdAt: -1 })
       .skip(skip)
       .limit(parseInt(limit))
       .lean();
 
-    const total = await Application.countDocuments(query);
+    const total = await User.countDocuments(query);
 
     res.json({
       success: true,
-      applications,
+      users,
       pagination: {
         current: parseInt(page),
         total: Math.ceil(total / limit),
-        totalApplications: total
+        totalUsers: total
       }
     });
   } catch (error) {
@@ -606,41 +700,92 @@ app.get('/api/admin/applications', authenticateAdmin, async (req, res) => {
   }
 });
 
-app.put('/api/admin/applications/:id', authenticateAdmin, async (req, res) => {
+app.post('/api/admin/users', authenticateAdmin, requirePermission('users.create'), auditLogger('create', 'User'), async (req, res) => {
   try {
-    const application = await Application.findByIdAndUpdate(
-      req.params.id, 
-      { ...req.body, updatedAt: new Date() },
-      { new: true, runValidators: true }
-    ).populate('jobId');
+    const { name, email, password, roleId, phone } = req.body;
 
-    if (!application) {
-      return res.status(404).json({ success: false, message: 'Application not found' });
+    const existingUser = await User.findOne({ email });
+    if (existingUser) {
+      return res.status(400).json({ success: false, message: 'User already exists' });
     }
 
-    res.json({ success: true, message: 'Application updated successfully', application });
+    const hashedPassword = await bcrypt.hash(password, 12);
+    const user = new User({
+      name,
+      email,
+      password: hashedPassword,
+      roleId,
+      phone
+    });
+
+    await user.save();
+    await user.populate('roleId', 'name permissions');
+
+    res.status(201).json({ 
+      success: true, 
+      message: 'User created successfully', 
+      user: {
+        id: user._id,
+        name: user.name,
+        email: user.email,
+        role: user.roleId,
+        phone: user.phone,
+        isActive: user.isActive
+      }
+    });
   } catch (error) {
-    res.status(400).json({ success: false, message: 'Update error', error: error.message });
+    res.status(400).json({ success: false, message: 'Validation error', error: error.message });
   }
 });
 
-// Testimonial Management Routes
-app.get('/api/admin/testimonials', authenticateAdmin, async (req, res) => {
+// Role Management Routes
+app.get('/api/admin/roles', authenticateAdmin, requirePermission('roles.read'), async (req, res) => {
   try {
-    const { page = 1, limit = 20 } = req.query;
-    const skip = (page - 1) * parseInt(limit);
+    const roles = await Role.find().sort({ name: 1 }).lean();
+    res.json({ success: true, roles });
+  } catch (error) {
+    res.status(500).json({ success: false, message: 'Server error', error: error.message });
+  }
+});
 
-    const testimonials = await Testimonial.find()
+app.post('/api/admin/roles', authenticateAdmin, requirePermission('roles.create'), auditLogger('create', 'Role'), async (req, res) => {
+  try {
+    const role = new Role(req.body);
+    await role.save();
+
+    res.status(201).json({ success: true, message: 'Role created successfully', role });
+  } catch (error) {
+    res.status(400).json({ success: false, message: 'Validation error', error: error.message });
+  }
+});
+
+// Page Management Routes
+app.get('/api/admin/pages', authenticateAdmin, requirePermission('pages.read'), async (req, res) => {
+  try {
+    const { page = 1, limit = 20, status, search } = req.query;
+
+    let query = {};
+    if (status) query.status = status;
+    if (search) {
+      query.$or = [
+        { title: { $regex: search, $options: 'i' } },
+        { slug: { $regex: search, $options: 'i' } }
+      ];
+    }
+
+    const skip = (page - 1) * parseInt(limit);
+    const pages = await Page.find(query)
+      .populate('authorId', 'name')
       .sort({ createdAt: -1 })
       .skip(skip)
       .limit(parseInt(limit))
       .lean();
 
-    const total = await Testimonial.countDocuments();
+    const total = await Page.countDocuments(query);
 
     res.json({
       success: true,
-      testimonials,
+      pages,
       pagination: {
         current: parseInt(page),
         total: Math.ceil(total / limit)
@@ -651,69 +796,45 @@ app.get('/api/admin/testimonials', authenticateAdmin, async (req, res) => {
   }
 });
 
-app.post('/api/admin/testimonials', authenticateAdmin, upload.single('image'), async (req, res) => {
+app.post('/api/admin/pages', authenticateAdmin, requirePermission('pages.create'), auditLogger('create', 'Page'), async (req, res) => {
   try {
-    const testimonialData = { ...req.body };
-    if (req.file) testimonialData.image = req.file.filename;
+    const pageData = {
+      ...req.body,
+      authorId: req.user._id,
+      slug: req.body.slug || req.body.title.toLowerCase().replace(/[^a-z0-9]+/g, '-')
+    };
 
-    const testimonial = new Testimonial(testimonialData);
-    await testimonial.save();
+    const page = new Page(pageData);
+    await page.save();
 
-    res.status(201).json({ success: true, message: 'Testimonial created successfully', testimonial });
+    res.status(201).json({ success: true, message: 'Page created successfully', page });
   } catch (error) {
     res.status(400).json({ success: false, message: 'Validation error', error: error.message });
   }
 });
 
-app.put('/api/admin/testimonials/:id', authenticateAdmin, upload.single('image'), async (req, res) => {
+// Media Management Routes
+app.get('/api/admin/media', authenticateAdmin, requirePermission('media.read'), async (req, res) => {
   try {
-    const updateData = { ...req.body };
-    if (req.file) updateData.image = req.file.filename;
+    const { page = 1, limit = 20, mimeType, tags } = req.query;
 
-    const testimonial = await Testimonial.findByIdAndUpdate(req.params.id, updateData, { 
-      new: true, 
-      runValidators: true 
-    });
+    let query = {};
+    if (mimeType) query.mimeType = { $regex: mimeType, $options: 'i' };
+    if (tags) query.tags = { $in: tags.split(',') };
 
-    if (!testimonial) {
-      return res.status(404).json({ success: false, message: 'Testimonial not found' });
-    }
-
-    res.json({ success: true, message: 'Testimonial updated successfully', testimonial });
-  } catch (error) {
-    res.status(400).json({ success: false, message: 'Update error', error: error.message });
-  }
-});
-
-app.delete('/api/admin/testimonials/:id', authenticateAdmin, async (req, res) => {
-  try {
-    const testimonial = await Testimonial.findByIdAndDelete(req.params.id);
-    if (!testimonial) {
-      return res.status(404).json({ success: false, message: 'Testimonial not found' });
-    }
-    res.json({ success: true, message: 'Testimonial deleted successfully' });
-  } catch (error) {
-    res.status(500).json({ success: false, message: 'Server error', error: error.message });
-  }
-});
-
-// Event Management Routes
-app.get('/api/admin/events', authenticateAdmin, async (req, res) => {
-  try {
-    const { page = 1, limit = 20 } = req.query;
     const skip = (page - 1) * parseInt(limit);
-
-    const events = await Event.find()
-      .sort({ startDate: -1 })
+    const media = await Media.find(query)
+      .populate('uploadedBy', 'name')
+      .sort({ createdAt: -1 })
       .skip(skip)
       .limit(parseInt(limit))
       .lean();
 
-    const total = await Event.countDocuments();
+    const total = await Media.countDocuments(query);
 
     res.json({
       success: true,
-      events,
+      media,
       pagination: {
         current: parseInt(page),
         total: Math.ceil(total / limit)
@@ -724,77 +845,207 @@ app.get('/api/admin/events', authenticateAdmin, async (req, res) => {
   }
 });
 
-app.post('/api/admin/events', authenticateAdmin, upload.single('image'), async (req, res) => {
+app.post('/api/admin/media', authenticateAdmin, requirePermission('media.upload'), upload.array('files', 10), auditLogger('create', 'Media'), async (req, res) => {
   try {
-    const eventData = { ...req.body };
-    if (req.file) eventData.image = req.file.filename;
+    const { altText, tags, isPublic = true } = req.body;
+    const uploadedFiles = [];
 
-    const event = new Event(eventData);
-    await event.save();
+    for (const file of req.files) {
+      let width, height;
+      
+      // Get image dimensions if it's an image
+      if (file.mimetype.startsWith('image/')) {
+        try {
+          const metadata = await sharp(file.path).metadata();
+          width = metadata.width;
+          height = metadata.height;
 
-    res.status(201).json({ success: true, message: 'Event created successfully', event });
+          // Generate thumbnails
+          const thumbnails = {};
+          const sizes = { small: 150, medium: 300, large: 600 };
+          
+          for (const [size, dimension] of Object.entries(sizes)) {
+            const thumbnailPath = `uploads/thumbnails/${size}-${file.filename}`;
+            await sharp(file.path)
+              .resize(dimension, dimension, { fit: 'inside', withoutEnlargement: true })
+              .jpeg({ quality: 80 })
+              .toFile(thumbnailPath);
+            thumbnails[size] = thumbnailPath;
+          }
+
+          const media = new Media({
+            filename: file.filename,
+            originalName: file.originalname,
+            mimeType: file.mimetype,
+            size: file.size,
+            width,
+            height,
+            path: file.path,
+            uploadedBy: req.user._id,
+            altText: altText || file.originalname,
+            tags: tags ? tags.split(',').map(tag => tag.trim()) : [],
+            isPublic: isPublic === 'true',
+            thumbnails
+          });
+
+          await media.save();
+          uploadedFiles.push(media);
+        } catch (error) {
+          console.error('Error processing image:', error);
+        }
+      } else {
+        // Non-image file
+        const media = new Media({
+          filename: file.filename,
+          originalName: file.originalname,
+          mimeType: file.mimetype,
+          size: file.size,
+          path: file.path,
+          uploadedBy: req.user._id,
+          altText: altText || file.originalname,
+          tags: tags ? tags.split(',').map(tag => tag.trim()) : [],
+          isPublic: isPublic === 'true'
+        });
+
+        await media.save();
+        uploadedFiles.push(media);
+      }
+    }
+
+    res.status(201).json({ 
+      success: true, 
+      message: 'Files uploaded successfully', 
+      files: uploadedFiles 
+    });
   } catch (error) {
-    res.status(400).json({ success: false, message: 'Validation error', error: error.message });
+    res.status(500).json({ success: false, message: 'Upload error', error: error.message });
   }
 });
 
-app.put('/api/admin/events/:id', authenticateAdmin, upload.single('image'), async (req, res) => {
+// Consultation Management Routes
+app.get('/api/admin/consultations', authenticateAdmin, async (req, res) => {
   try {
-    const updateData = { ...req.body };
-    if (req.file) updateData.image = req.file.filename;
+    const { status, page = 1, limit = 20, search } = req.query;
+    let query = {};
 
-    const event = await Event.findByIdAndUpdate(req.params.id, updateData, { 
-      new: true, 
-      runValidators: true 
-    });
-
-    if (!event) {
-      return res.status(404).json({ success: false, message: 'Event not found' });
+    if (status) query.status = status;
+    if (search) {
+      query.$or = [
+        { clientName: { $regex: search, $options: 'i' } },
+        { clientEmail: { $regex: search, $options: 'i' } },
+        { bookingId: { $regex: search, $options: 'i' } }
+      ];
     }
 
-    res.json({ success: true, message: 'Event updated successfully', event });
+    const skip = (page - 1) * parseInt(limit);
+    const consultations = await Consultation.find(query)
+      .populate('assignedTo', 'name')
+      .sort({ createdAt: -1 })
+      .skip(skip)
+      .limit(parseInt(limit))
+      .lean();
+
+    const total = await Consultation.countDocuments(query);
+
+    res.json({
+      success: true,
+      consultations,
+      pagination: {
+        current: parseInt(page),
+        total: Math.ceil(total / limit),
+        totalConsultations: total
+      }
+    });
+  } catch (error) {
+    res.status(500).json({ success: false, message: 'Server error', error: error.message });
+  }
+});
+
+app.put('/api/admin/consultations/:id', authenticateAdmin, auditLogger('update', 'Consultation'), async (req, res) => {
+  try {
+    const consultation = await Consultation.findByIdAndUpdate(
+      req.params.id,
+      { ...req.body, updatedAt: new Date() },
+      { new: true, runValidators: true }
+    ).populate('assignedTo', 'name');
+
+    if (!consultation) {
+      return res.status(404).json({ success: false, message: 'Consultation not found' });
+    }
+
+    res.json({ success: true, message: 'Consultation updated successfully', consultation });
   } catch (error) {
     res.status(400).json({ success: false, message: 'Update error', error: error.message });
   }
 });
 
-app.delete('/api/admin/events/:id', authenticateAdmin, async (req, res) => {
+// Audit Log Routes
+app.get('/api/admin/audit', authenticateAdmin, requirePermission('audit.read'), async (req, res) => {
   try {
-    const event = await Event.findByIdAndDelete(req.params.id);
-    if (!event) {
-      return res.status(404).json({ success: false, message: 'Event not found' });
+    const { page = 1, limit = 50, action, model, userId, startDate, endDate } = req.query;
+
+    let query = {};
+    if (action) query.action = action;
+    if (model) query.model = model;
+    if (userId) query.userId = userId;
+    if (startDate || endDate) {
+      query.createdAt = {};
+      if (startDate) query.createdAt.$gte = new Date(startDate);
+      if (endDate) query.createdAt.$lte = new Date(endDate);
     }
-    res.json({ success: true, message: 'Event deleted successfully' });
+
+    const skip = (page - 1) * parseInt(limit);
+    const logs = await AuditLog.find(query)
+      .populate('userId', 'name email')
+      .sort({ createdAt: -1 })
+      .skip(skip)
+      .limit(parseInt(limit))
+      .lean();
+
+    const total = await AuditLog.countDocuments(query);
+
+    res.json({
+      success: true,
+      logs,
+      pagination: {
+        current: parseInt(page),
+        total: Math.ceil(total / limit),
+        totalLogs: total
+      }
+    });
   } catch (error) {
     res.status(500).json({ success: false, message: 'Server error', error: error.message });
   }
 });
 
-// Settings Management
-app.get('/api/admin/settings', authenticateAdmin, async (req, res) => {
+// Theme Management Routes
+app.get('/api/admin/themes', authenticateAdmin, requirePermission('theme.read'), async (req, res) => {
   try {
-    const settings = await Setting.find().lean();
-    res.json({ success: true, settings });
+    const themes = await Theme.find().sort({ name: 1 }).lean();
+    res.json({ success: true, themes });
   } catch (error) {
     res.status(500).json({ success: false, message: 'Server error', error: error.message });
   }
 });
 
-app.post('/api/admin/settings', authenticateAdmin, async (req, res) => {
+app.post('/api/admin/themes', authenticateAdmin, requirePermission('theme.update'), auditLogger('create', 'Theme'), async (req, res) => {
   try {
-    const { key, value, category, description, isPublic } = req.body;
+    // Deactivate all themes if this one is being set as active
+    if (req.body.isActive) {
+      await Theme.updateMany({}, { isActive: false });
+    }
 
-    const setting = await Setting.findOneAndUpdate(
-      { key },
-      { value, category, description, isPublic },
-      { upsert: true, new: true }
-    );
+    const theme = new Theme(req.body);
+    await theme.save();
 
-    res.json({ success: true, message: 'Setting updated successfully', setting });
+    res.status(201).json({ success: true, message: 'Theme created successfully', theme });
   } catch (error) {
     res.status(400).json({ success: false, message: 'Validation error', error: error.message });
   }
 });
+
+// Continue with existing job, application, testimonial, event routes...
+// (keeping the same structure as before)
 
 // Serve uploaded files
 app.use('/uploads', express.static('uploads'));
@@ -812,6 +1063,9 @@ app.use((error, req, res, next) => {
 // Create uploads directory if it doesn't exist
 if (!fs.existsSync('uploads')) {
   fs.mkdirSync('uploads', { recursive: true });
+}
+if (!fs.existsSync('uploads/thumbnails')) {
+  fs.mkdirSync('uploads/thumbnails', { recursive: true });
 }
 
 // Health check endpoint

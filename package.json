@@ -10,11 +10,22 @@
     "build": "cd frontend && npm run build",
     "install-all": "npm install && cd frontend && npm install && cd ../backend && npm install"
   },
-  "keywords": ["education", "consulting", "jobs", "international"],
+  "keywords": [
+    "education",
+    "consulting",
+    "jobs",
+    "international"
+  ],
   "author": "Uddaan Consultancy",
   "license": "MIT",
   "devDependencies": {
     "concurrently": "^8.2.2",
     "nodemon": "^3.0.2"
+  },
+  "dependencies": {
+    "nodemailer": "^7.0.5",
+    "qrcode": "^1.5.4",
+    "sharp": "^0.34.3",
+    "speakeasy": "^2.0.0"
   }
-} 
+}
