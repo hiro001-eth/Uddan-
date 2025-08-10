@@ -1,0 +1,40 @@
+services:
+  db:
+    image: postgres:15
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_DB: uddaan
+    ports:
+      - '${PG_HOST_PORT:-5432}:5432'
+    volumes:
+      - db_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 5s
+      timeout: 5s
+      retries: 20
+
+  api:
+    build: .
+    depends_on:
+      db:
+        condition: service_healthy
+    environment:
+      - DATABASE_URL=postgresql://postgres:postgres@db:5432/uddaan?schema=public
+      - NODE_ENV=production
+      - PORT=3000
+      - CORS_ORIGIN=https://admin.uddaanagencies.com
+      - JWT_ACCESS_SECRET=change_me_access
+      - JWT_REFRESH_SECRET=change_me_refresh
+      - COOKIE_SECURE=false
+      - COOKIE_DOMAIN=localhost
+      - COOKIE_SAME_SITE=lax
+      - CSRF_COOKIE_NAME=csrfToken
+      - CSRF_HEADER_NAME=x-csrf-token
+    ports:
+      - '3000:3000'
+    command: sh -c "npx prisma migrate deploy && node dist/index.js"
+
+volumes:
+  db_data:

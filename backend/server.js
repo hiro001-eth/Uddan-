@@ -33,10 +33,15 @@ app.use(helmet({
   },
 }));
 
-app.use(cors({
-  origin: process.env.NODE_ENV === 'production' ? ['https://your-domain.com'] : ['http://localhost:3000', 'http://127.0.0.1:3000'],
-  credentials: true
-}));
+const allowedOrigins = (() => {
+  const envOrigin = process.env.CORS_ORIGIN;
+  const defaults = ['http://localhost:3000', 'http://127.0.0.1:3000'];
+  if (!envOrigin) return defaults;
+  // support comma-separated origins
+  return envOrigin.split(',').map((s) => s.trim()).filter(Boolean);
+})();
+
+app.use(cors({ origin: allowedOrigins, credentials: true }));
 
 app.use(express.json({ limit: '50mb' }));
 app.use(express.urlencoded({ extended: true, limit: '50mb' }));
@@ -116,7 +121,7 @@ const upload = multer({
 });
 
 // Email configuration
-const transporter = nodemailer.createTransporter({
+const transporter = nodemailer.createTransport({
   host: process.env.SMTP_HOST || 'smtp.gmail.com',
   port: process.env.SMTP_PORT || 587,
   secure: false,
@@ -526,6 +531,155 @@ app.post('/api/admin/login', adminLimiter, async (req, res) => {
     });
   } catch (error) {
     res.status(500).json({ success: false, message: 'Server error', error: error.message });
+  }
+});
+
+// Jobs Management Routes
+app.get('/api/admin/jobs', authenticateAdmin, requirePermission('jobs.read'), async (req, res) => {
+  try {
+    const { page = 1, limit = 20, search, country, jobType, isActive } = req.query;
+
+    const query = {};
+    if (search) {
+      query.$or = [
+        { title: { $regex: search, $options: 'i' } },
+        { company: { $regex: search, $options: 'i' } },
+        { description: { $regex: search, $options: 'i' } }
+      ];
+    }
+    if (country) query.country = { $regex: country, $options: 'i' };
+    if (jobType) query.jobType = jobType;
+    if (typeof isActive !== 'undefined') query.isActive = isActive === 'true';
+
+    const skip = (parseInt(page) - 1) * parseInt(limit);
+    const jobs = await Job.find(query)
+      .sort({ createdAt: -1 })
+      .skip(skip)
+      .limit(parseInt(limit))
+      .lean();
+
+    const total = await Job.countDocuments(query);
+
+    res.json({
+      success: true,
+      jobs,
+      pagination: {
+        current: parseInt(page),
+        total: Math.ceil(total / parseInt(limit)),
+        totalJobs: total
+      }
+    });
+  } catch (error) {
+    res.status(500).json({ success: false, message: 'Server error', error: error.message });
+  }
+});
+
+app.post('/api/admin/jobs', authenticateAdmin, requirePermission('jobs.create'), auditLogger('create', 'Job'), async (req, res) => {
+  try {
+    const payload = { ...req.body };
+    if (typeof payload.featured !== 'undefined') payload.featured = payload.featured === 'true' || payload.featured === true;
+    if (typeof payload.isActive !== 'undefined') payload.isActive = payload.isActive === 'true' || payload.isActive === true;
+    if (typeof payload.requirements === 'string') payload.requirements = payload.requirements.split(',').map(v => v.trim()).filter(Boolean);
+    if (typeof payload.seoKeywords === 'string') payload.seoKeywords = payload.seoKeywords.split(',').map(v => v.trim()).filter(Boolean);
+
+    const job = new Job(payload);
+    await job.save();
+    res.status(201).json({ success: true, message: 'Job created successfully', job });
+  } catch (error) {
+    res.status(400).json({ success: false, message: 'Validation error', error: error.message });
+  }
+});
+
+app.put('/api/admin/jobs/:id', authenticateAdmin, requirePermission('jobs.update'), auditLogger('update', 'Job'), async (req, res) => {
+  try {
+    const payload = { ...req.body, updatedAt: new Date() };
+    if (typeof payload.featured !== 'undefined') payload.featured = payload.featured === 'true' || payload.featured === true;
+    if (typeof payload.isActive !== 'undefined') payload.isActive = payload.isActive === 'true' || payload.isActive === true;
+    if (typeof payload.requirements === 'string') payload.requirements = payload.requirements.split(',').map(v => v.trim()).filter(Boolean);
+    if (typeof payload.seoKeywords === 'string') payload.seoKeywords = payload.seoKeywords.split(',').map(v => v.trim()).filter(Boolean);
+
+    const job = await Job.findByIdAndUpdate(
+      req.params.id,
+      payload,
+      { new: true, runValidators: true }
+    );
+
+    if (!job) {
+      return res.status(404).json({ success: false, message: 'Job not found' });
+    }
+
+    res.json({ success: true, message: 'Job updated successfully', job });
+  } catch (error) {
+    res.status(400).json({ success: false, message: 'Update error', error: error.message });
+  }
+});
+
+app.delete('/api/admin/jobs/:id', authenticateAdmin, requirePermission('jobs.delete'), auditLogger('delete', 'Job'), async (req, res) => {
+  try {
+    const job = await Job.findByIdAndDelete(req.params.id);
+    if (!job) {
+      return res.status(404).json({ success: false, message: 'Job not found' });
+    }
+    res.json({ success: true, message: 'Job deleted successfully' });
+  } catch (error) {
+    res.status(500).json({ success: false, message: 'Delete error', error: error.message });
+  }
+});
+
+// Applications Management Routes
+app.get('/api/admin/applications', authenticateAdmin, requirePermission('applications.read'), async (req, res) => {
+  try {
+    const { page = 1, limit = 20, search, status, jobId } = req.query;
+    const query = {};
+    if (status) query.status = status;
+    if (jobId) query.jobId = jobId;
+    if (search) {
+      query.$or = [
+        { name: { $regex: search, $options: 'i' } },
+        { email: { $regex: search, $options: 'i' } },
+        { phone: { $regex: search, $options: 'i' } }
+      ];
+    }
+
+    const skip = (parseInt(page) - 1) * parseInt(limit);
+    const applications = await Application.find(query)
+      .populate('jobId')
+      .sort({ createdAt: -1 })
+      .skip(skip)
+      .limit(parseInt(limit))
+      .lean();
+
+    const total = await Application.countDocuments(query);
+
+    res.json({
+      success: true,
+      applications,
+      pagination: {
+        current: parseInt(page),
+        total: Math.ceil(total / parseInt(limit)),
+        totalApplications: total
+      }
+    });
+  } catch (error) {
+    res.status(500).json({ success: false, message: 'Server error', error: error.message });
+  }
+});
+
+app.put('/api/admin/applications/:id', authenticateAdmin, requirePermission('applications.update'), auditLogger('update', 'Application'), async (req, res) => {
+  try {
+    const application = await Application.findByIdAndUpdate(
+      req.params.id,
+      { ...req.body, updatedAt: new Date() },
+      { new: true, runValidators: true }
+    ).populate('jobId');
+
+    if (!application) {
+      return res.status(404).json({ success: false, message: 'Application not found' });
+    }
+
+    res.json({ success: true, message: 'Application updated successfully', application });
+  } catch (error) {
+    res.status(400).json({ success: false, message: 'Update error', error: error.message });
   }
 });
 

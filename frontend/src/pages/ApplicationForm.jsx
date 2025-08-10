@@ -14,18 +14,23 @@ const ApplicationForm = () => {
   const { register, handleSubmit, formState: { errors } } = useForm();
 
   useEffect(() => {
-    // Simulate fetching job details
+    const controller = new AbortController();
     const fetchJob = async () => {
       try {
-        // In a real app, this would be an API call
-        const sampleJob = {
-          id: jobId,
-          title: "Software Engineer",
-          company: "TechCorp Dubai",
-          country: "UAE",
-          salary: "$4000-6000/month"
-        };
-        setJob(sampleJob);
+        const res = await fetch(`/api/jobs/${jobId}`, { signal: controller.signal });
+        const data = await res.json();
+        if (data.success && data.job) {
+          const j = data.job;
+          setJob({
+            id: j._id,
+            title: j.title,
+            company: j.company,
+            country: j.country,
+            salary: j.salary
+          });
+        } else {
+          throw new Error('Job not found');
+        }
       } catch (error) {
         toast.error('Failed to load job details');
         navigate('/jobs');
@@ -33,24 +38,26 @@ const ApplicationForm = () => {
     };
 
     fetchJob();
+    return () => controller.abort();
   }, [jobId, navigate]);
 
   const onSubmit = async (data) => {
     setIsSubmitting(true);
     try {
-      const res = await fetch(`/api/jobs/${jobId}/apply`, {
+      const res = await fetch(`/api/applications`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
+          jobId,
           name: data.name,
           email: data.email,
           phone: data.phone,
-          cover_letter: data.additionalInfo || ''
+          coverLetter: data.additionalInfo || ''
         })
       });
       if (!res.ok) {
         const err = await res.json().catch(() => ({}));
-        throw new Error(err.detail || 'Submit failed');
+        throw new Error(err.message || 'Submit failed');
       }
       setIsSubmitted(true);
       toast.success('Application submitted successfully!');

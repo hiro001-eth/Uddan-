@@ -14,161 +14,50 @@ const JobListPage = () => {
     search: searchParams.get('search') || ''
   });
 
-  // Sample job data focused on Gulf countries and realistic positions
-  const sampleJobs = [
-    {
-      id: 1,
-      title: "Software Engineer",
-      company: "TechCorp Dubai",
-      country: "UAE",
-      jobType: "Full-time",
-      salary: "$4000-6000/month",
-      description: "We are looking for a skilled Software Engineer to join our dynamic team in Dubai. Experience with React, Node.js, and cloud technologies required.",
-      requirements: ["3+ years experience", "React/Node.js", "Cloud platforms", "English fluency"],
-      contactEmail: "hr@techcorp.ae",
-      universityLogo: "https://images.unsplash.com/photo-1560472354-b33ff0c44a43?w=100",
-      universityWebsite: "https://techcorp.ae",
-      isActive: true,
-      featured: true,
-      views: 245,
-      applications: 18,
-      postedDate: "2024-01-15"
-    },
-    {
-      id: 2,
-      title: "Marketing Manager",
-      company: "Global Retail Qatar",
-      country: "Qatar",
-      jobType: "Full-time",
-      salary: "$3500-5000/month",
-      description: "Join our marketing team in Doha. Lead digital marketing campaigns and brand development for our retail operations across Qatar.",
-      requirements: ["5+ years experience", "Digital marketing", "Team leadership", "Arabic preferred"],
-      contactEmail: "careers@globalretail.qa",
-      universityLogo: "https://images.unsplash.com/photo-1552664730-d307ca884978?w=100",
-      universityWebsite: "https://globalretail.qa",
-      isActive: true,
-      featured: true,
-      views: 189,
-      applications: 12,
-      postedDate: "2024-01-20"
-    },
-    {
-      id: 3,
-      title: "Accountant",
-      company: "Finance Solutions Saudi",
-      country: "Saudi Arabia",
-      jobType: "Full-time",
-      salary: "$3000-4500/month",
-      description: "Experienced accountant needed for our Riyadh office. Handle financial reporting, tax compliance, and budgeting for our growing company.",
-      requirements: ["CPA/ACCA", "3+ years experience", "SAP knowledge", "Arabic fluency"],
-      contactEmail: "hr@financesolutions.sa",
-      universityLogo: "https://images.unsplash.com/photo-1554224155-6726b3ff858f?w=100",
-      universityWebsite: "https://financesolutions.sa",
-      isActive: true,
-      featured: false,
-      views: 156,
-      applications: 8,
-      postedDate: "2024-01-25"
-    },
-    {
-      id: 4,
-      title: "Nurse",
-      company: "Medical Center Kuwait",
-      country: "Kuwait",
-      jobType: "Full-time",
-      salary: "$2500-4000/month",
-      description: "Registered nurses needed for our state-of-the-art medical facility in Kuwait City. Excellent benefits and career growth opportunities.",
-      requirements: ["BSN degree", "2+ years experience", "Valid license", "English/Arabic"],
-      contactEmail: "nursing@medicalcenter.kw",
-      universityLogo: "https://images.unsplash.com/photo-1559757148-5c350d0d3c56?w=100",
-      universityWebsite: "https://medicalcenter.kw",
-      isActive: true,
-      featured: false,
-      views: 203,
-      applications: 15,
-      postedDate: "2024-01-30"
-    },
-    {
-      id: 5,
-      title: "Construction Supervisor",
-      company: "BuildCorp Oman",
-      country: "Oman",
-      jobType: "Full-time",
-      salary: "$2800-4200/month",
-      description: "Supervise construction projects in Muscat. Manage teams, ensure safety standards, and coordinate with clients and contractors.",
-      requirements: ["Civil engineering degree", "5+ years experience", "Safety certification", "Leadership skills"],
-      contactEmail: "construction@buildcorp.om",
-      universityLogo: "https://images.unsplash.com/photo-1541888946425-d81bb19240f5?w=100",
-      universityWebsite: "https://buildcorp.om",
-      isActive: true,
-      featured: false,
-      views: 134,
-      applications: 6,
-      postedDate: "2024-02-05"
-    },
-    {
-      id: 6,
-      title: "Hotel Manager",
-      company: "Luxury Hotels Bahrain",
-      country: "Bahrain",
-      jobType: "Full-time",
-      salary: "$3200-4800/month",
-      description: "Manage operations for our luxury hotel in Manama. Oversee staff, guest services, and ensure exceptional customer experience.",
-      requirements: ["Hospitality degree", "3+ years management", "Customer service", "Multilingual"],
-      contactEmail: "careers@luxuryhotels.bh",
-      universityLogo: "https://images.unsplash.com/photo-1566073771259-6a8506099945?w=100",
-      universityWebsite: "https://luxuryhotels.bh",
-      isActive: true,
-      featured: false,
-      views: 167,
-      applications: 9,
-      postedDate: "2024-02-10"
-    },
-    {
-      id: 7,
-      title: "Sales Executive",
-      company: "Tech Solutions UAE",
-      country: "UAE",
-      jobType: "Full-time",
-      salary: "$2500-4000/month",
-      description: "Drive sales for our technology solutions in Dubai. Build client relationships and achieve sales targets in the competitive tech market.",
-      requirements: ["Sales experience", "Tech knowledge", "Communication skills", "Target-driven"],
-      contactEmail: "sales@techsolutions.ae",
-      universityLogo: "https://images.unsplash.com/photo-1516321318423-f06f85e504b3?w=100",
-      universityWebsite: "https://techsolutions.ae",
-      isActive: true,
-      featured: false,
-      views: 145,
-      applications: 11,
-      postedDate: "2024-02-15"
-    },
-    {
-      id: 8,
-      title: "Teacher",
-      company: "International School Qatar",
-      country: "Qatar",
-      jobType: "Full-time",
-      salary: "$3000-4500/month",
-      description: "Join our international school in Doha. Teach English, Math, or Science to diverse student body. Excellent benefits and professional development.",
-      requirements: ["Teaching degree", "2+ years experience", "English fluency", "International experience"],
-      contactEmail: "teaching@internationalschool.qa",
-      universityLogo: "https://images.unsplash.com/photo-1522202176988-66273c2fd55f?w=100",
-      universityWebsite: "https://internationalschool.qa",
-      isActive: true,
-      featured: false,
-      views: 178,
-      applications: 13,
-      postedDate: "2024-02-20"
-    }
-  ];
-
   useEffect(() => {
-    // Simulate API call
-    setTimeout(() => {
-      setJobs(sampleJobs);
-      setLoading(false);
-    }, 1000);
-  }, []);
+    const controller = new AbortController();
+    const fetchJobs = async () => {
+      try {
+        setLoading(true);
+        const params = new URLSearchParams();
+        if (filters.country) params.append('country', filters.country);
+        if (filters.jobType) params.append('jobType', filters.jobType);
+        if (filters.search) params.append('search', filters.search);
+        params.append('limit', '50');
+        const res = await fetch(`/api/jobs?${params.toString()}`, { signal: controller.signal });
+        const data = await res.json();
+        if (data.success) {
+          const mapped = (data.jobs || []).map(j => ({
+            id: j._id,
+            title: j.title,
+            company: j.company,
+            country: j.country,
+            jobType: j.jobType,
+            salary: j.salary,
+            description: j.description,
+            requirements: j.requirements || [],
+            contactEmail: j.contactEmail,
+            universityLogo: j.universityLogo,
+            universityWebsite: j.universityWebsite,
+            isActive: j.isActive,
+            featured: j.featured,
+            views: j.views || 0,
+            applications: j.applications || 0,
+            postedDate: j.createdAt
+          }));
+          setJobs(mapped);
+        } else {
+          setJobs([]);
+        }
+      } catch (e) {
+        setJobs([]);
+      } finally {
+        setLoading(false);
+      }
+    };
+    fetchJobs();
+    return () => controller.abort();
+  }, [filters.country, filters.jobType, filters.search]);
 
   const handleFilterChange = (key, value) => {
     const newFilters = { ...filters, [key]: value };

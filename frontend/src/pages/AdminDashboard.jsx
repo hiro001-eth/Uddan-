@@ -30,7 +30,8 @@ const AdminDashboard = () => {
     auditLogs: [],
     themes: [],
     settings: {},
-    stats: {}
+    stats: {},
+    contacts: [],
   });
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
@@ -41,27 +42,69 @@ const AdminDashboard = () => {
   const [showModal, setShowModal] = useState(false);
   const [modalType, setModalType] = useState('');
   const [editingItem, setEditingItem] = useState(null);
+  const [deletingId, setDeletingId] = useState(null);
   
   // Form states
   const [formData, setFormData] = useState({});
   const [selectedFile, setSelectedFile] = useState(null);
   const [sidebarOpen, setSidebarOpen] = useState(true);
   const [notifications, setNotifications] = useState([]);
+  const [notificationDropdownOpen, setNotificationDropdownOpen] = useState(false);
 
   const COLORS = ['#3B82F6', '#10B981', '#F59E0B', '#EF4444', '#8B5CF6', '#06B6D4'];
 
   useEffect(() => {
-    checkAuth();
+    if (!checkAuth()) {
+      return; // Exit early if authentication fails
+    }
     fetchData();
     fetchNotifications();
   }, [activeTab, pagination.current, searchTerm, filters]);
 
-  const checkAuth = () => {
-    const token = localStorage.getItem('adminToken');
-    if (!token) {
-      navigate('/secure-admin-access-2024');
+  // Initial authentication check on component mount
+  useEffect(() => {
+    if (!checkAuth()) {
       return;
     }
+  }, []);
+
+  // Close notification dropdown when clicking outside
+  useEffect(() => {
+    const handleClickOutside = (event) => {
+      if (notificationDropdownOpen && !event.target.closest('.notification-dropdown')) {
+        setNotificationDropdownOpen(false);
+      }
+    };
+
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+    };
+  }, [notificationDropdownOpen]);
+
+  const checkAuth = () => {
+    const token = localStorage.getItem('adminToken');
+    const authTime = localStorage.getItem('adminAuthAt');
+    
+    if (!token || !authTime) {
+      localStorage.removeItem('adminToken');
+      localStorage.removeItem('adminAuthAt');
+      navigate('/secure-admin-access-2024');
+      return false;
+    }
+
+    // Check if token is expired (24 hours)
+    const tokenAge = Date.now() - parseInt(authTime);
+    const maxAge = 24 * 60 * 60 * 1000; // 24 hours in milliseconds
+
+    if (tokenAge > maxAge) {
+      localStorage.removeItem('adminToken');
+      localStorage.removeItem('adminAuthAt');
+      navigate('/secure-admin-access-2024');
+      return false;
+    }
+
+    return true;
   };
 
   const fetchData = async () => {
@@ -208,8 +251,8 @@ const AdminDashboard = () => {
     }
   };
 
-  const handleDelete = async (id) => {
-    if (!window.confirm('Are you sure you want to delete this item?')) return;
+  const handleDelete = async (id, skipConfirm = false) => {
+    if (!skipConfirm && !window.confirm('Are you sure you want to delete this item?')) return;
 
     try {
       const token = localStorage.getItem('adminToken');
@@ -435,11 +478,11 @@ const AdminDashboard = () => {
         </div>
       </div>
 
-      <div className="overflow-x-auto">
+      <div className="overflow-auto max-h-[70vh]">
         <table className="w-full">
-          <thead className="bg-gray-50">
+          <thead className="bg-gray-50 sticky top-0 z-10">
             <tr>
-              {columns.map((column, index) => (
+              {columns?.map?.((column, index) => (
                 <th key={index} className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                   {column.label}
                 </th>
@@ -450,9 +493,9 @@ const AdminDashboard = () => {
             </tr>
           </thead>
           <tbody className="bg-white divide-y divide-gray-200">
-            {items?.map((item, index) => (
-              <tr key={item._id || index} className="hover:bg-gray-50">
-                {columns.map((column, colIndex) => (
+            {(Array.isArray(items) ? items : [])?.map?.((item, index) => (
+              <tr key={item._id || item.id || index} className="hover:bg-gray-50">
+                {columns?.map?.((column, colIndex) => (
                   <td key={colIndex} className="px-6 py-4 whitespace-nowrap">
                     {column.render ? column.render(item) : item[column.key]}
                   </td>
@@ -462,17 +505,38 @@ const AdminDashboard = () => {
                     <button
                       onClick={() => {
                         setEditingItem(item);
+                        setModalType('view');
+                        setShowModal(true);
+                      }}
+                      className="px-2 py-2 rounded-md text-blue-600 hover:text-blue-800 hover:bg-blue-50 focus:outline-none focus:ring-2 focus:ring-blue-400"
+                      aria-label={`View ${entityName} details`}
+                      title="View details"
+                    >
+                      <Eye className="w-4 h-4" />
+                    </button>
+                    <button
+                      onClick={() => {
+                        setEditingItem(item);
                         setFormData(item);
                         setModalType('edit');
                         setShowModal(true);
                       }}
-                      className="text-blue-600 hover:text-blue-900"
+                      className="px-2 py-2 rounded-md text-green-600 hover:text-green-800 hover:bg-green-50 focus:outline-none focus:ring-2 focus:ring-green-400"
+                      aria-label={`Edit ${entityName}`}
+                      title="Edit contact"
                     >
                       <Edit className="w-4 h-4" />
                     </button>
                     <button
-                      onClick={() => handleDelete(item._id)}
-                      className="text-red-600 hover:text-red-900"
+                      onClick={() => {
+                        setDeletingId(item._id || item.id);
+                        setEditingItem(item);
+                        setModalType('delete');
+                        setShowModal(true);
+                      }}
+                      className="px-2 py-2 rounded-md text-red-600 hover:text-red-800 hover:bg-red-50 focus:outline-none focus:ring-2 focus:ring-red-400"
+                      aria-label={`Delete ${entityName}`}
+                      title="Delete contact"
                     >
                       <Trash2 className="w-4 h-4" />
                     </button>
@@ -480,6 +544,13 @@ const AdminDashboard = () => {
                 </td>
               </tr>
             ))}
+            {(!Array.isArray(items) || (Array.isArray(items) && items.length === 0)) && (
+              <tr>
+                <td colSpan={(columns?.length || 0) + 1} className="px-6 py-8 text-center text-sm text-gray-500">
+                  No {entityName?.toLowerCase?.() || 'items'} found.
+                </td>
+              </tr>
+            )}
           </tbody>
         </table>
       </div>
@@ -523,6 +594,30 @@ const AdminDashboard = () => {
     switch (activeTab) {
       case 'dashboard':
         return renderDashboard();
+      case 'contacts':
+        return renderDataTable(
+          Array.isArray(data.contacts) ? data.contacts : (data.contacts?.items || []),
+          [
+            { key: 'fullName', label: 'Full Name' },
+            { key: 'email', label: 'Email' },
+            { key: 'phone', label: 'Phone' },
+            {
+              key: 'status',
+              label: 'Status',
+              render: (item) => (
+                <span className={`px-2 py-1 text-xs rounded-full ${
+                  item.status === 'resolved' ? 'bg-green-100 text-green-800' :
+                  item.status === 'in-progress' ? 'bg-yellow-100 text-yellow-800' :
+                  item.status === 'archived' ? 'bg-gray-100 text-gray-800' :
+                  'bg-blue-100 text-blue-800'
+                }`}>
+                  {item.status || 'new'}
+                </span>
+              )
+            }
+          ],
+          'Contacts'
+        );
       
       case 'users':
         return renderDataTable(
@@ -690,6 +785,7 @@ const AdminDashboard = () => {
     { id: 'users', label: 'Users', icon: Users },
     { id: 'jobs', label: 'Jobs', icon: Briefcase },
     { id: 'applications', label: 'Applications', icon: FileText },
+    { id: 'contacts', label: 'Contacts', icon: Mail },
     { id: 'consultations', label: 'Consultations', icon: Calendar },
     { id: 'pages', label: 'Pages', icon: Layers },
     { id: 'media', label: 'Media', icon: Image },
@@ -759,8 +855,11 @@ const AdminDashboard = () => {
             
             <div className="flex items-center space-x-4">
               {/* Notifications */}
-              <div className="relative">
-                <button className="p-2 rounded-lg hover:bg-gray-100 relative">
+              <div className="relative notification-dropdown">
+                <button 
+                  onClick={() => setNotificationDropdownOpen(!notificationDropdownOpen)}
+                  className="p-2 rounded-lg hover:bg-gray-100 relative"
+                >
                   <Bell className="w-5 h-5 text-gray-600" />
                   {notifications.length > 0 && (
                     <span className="absolute -top-1 -right-1 h-4 w-4 bg-red-500 text-white text-xs rounded-full flex items-center justify-center">
@@ -768,36 +867,10 @@ const AdminDashboard = () => {
                     </span>
                   )}
                 </button>
-              </div>
-
-              {/* Refresh */}
-              <button
-                onClick={fetchData}
-                className="p-2 rounded-lg hover:bg-gray-100"
-              >
-                <RefreshCw className="w-5 h-5 text-gray-600" />
-              </button>
-
-              {/* User Menu */}
-              <div className="flex items-center space-x-2">
-                <div className="w-8 h-8 bg-blue-600 rounded-full flex items-center justify-center">
-                  <span className="text-white text-sm font-medium">A</span>
-                </div>
-                <span className="text-gray-700 font-medium">Admin</span>
-              </div>
-            </div>
-          </div>
-        </header>
-
-        {/* Content */}
-        <main className="flex-1 overflow-auto p-6">
-          {renderContent()}
-        </main>
-      </div>
-
-      {/* Notifications Dropdown */}
-      {notifications.length > 0 && (
-        <div className="fixed top-20 right-4 w-80 bg-white rounded-lg shadow-lg border border-gray-200 z-50">
+                
+                {/* Notification Dropdown */}
+                {notificationDropdownOpen && notifications.length > 0 && (
+                  <div className="absolute right-0 top-12 w-80 bg-white rounded-lg shadow-lg border border-gray-200 z-50">
           <div className="p-4 border-b border-gray-200">
             <h3 className="font-semibold text-gray-900">Notifications</h3>
           </div>
@@ -828,6 +901,173 @@ const AdminDashboard = () => {
           </div>
         </div>
       )}
+              </div>
+
+              {/* Refresh */}
+              <button
+                onClick={fetchData}
+                className="p-2 rounded-lg hover:bg-gray-100"
+              >
+                <RefreshCw className="w-5 h-5 text-gray-600" />
+              </button>
+
+              {/* User Menu */}
+              <div className="flex items-center space-x-2">
+                <div className="w-8 h-8 bg-blue-600 rounded-full flex items-center justify-center">
+                  <span className="text-white text-sm font-medium">A</span>
+                </div>
+                <span className="text-gray-700 font-medium">Admin</span>
+              </div>
+            </div>
+          </div>
+        </header>
+
+        {/* Content */}
+        <main className="flex-1 overflow-auto p-6">
+          {renderContent()}
+          {showModal && (
+            <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+              <div className="absolute inset-0 bg-black/40" onClick={() => setShowModal(false)} />
+              <div className="relative bg-white w-full max-w-2xl rounded-lg shadow-lg border border-gray-200">
+                <div className="flex items-center justify-between p-4 border-b border-gray-200">
+                  <h3 className="text-lg font-semibold text-gray-900">
+                    {modalType === 'view' && 'View Contact'}
+                    {modalType === 'edit' && 'Edit Contact'}
+                    {modalType === 'create' && 'Create Contact'}
+                    {modalType === 'delete' && 'Delete Contact'}
+                  </h3>
+                  <button onClick={() => setShowModal(false)} className="p-2 rounded-md hover:bg-gray-100" aria-label="Close">
+                    <X className="w-5 h-5" />
+                  </button>
+                </div>
+                {modalType === 'view' && (
+                  <div className="p-6">
+                    <dl className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                      <div>
+                        <dt className="text-sm text-gray-500">Full Name</dt>
+                        <dd className="text-gray-900 font-medium">{editingItem?.fullName}</dd>
+                      </div>
+                      <div>
+                        <dt className="text-sm text-gray-500">Email</dt>
+                        <dd className="text-gray-900 font-medium">{editingItem?.email}</dd>
+                      </div>
+                      <div>
+                        <dt className="text-sm text-gray-500">Phone</dt>
+                        <dd className="text-gray-900 font-medium">{editingItem?.phone}</dd>
+                      </div>
+                      <div>
+                        <dt className="text-sm text-gray-500">Status</dt>
+                        <dd className="text-gray-900 font-medium">{editingItem?.status || 'new'}</dd>
+                      </div>
+                      {editingItem?.message && (
+                        <div className="sm:col-span-2">
+                          <dt className="text-sm text-gray-500">Message</dt>
+                          <dd className="text-gray-900 whitespace-pre-wrap">{editingItem?.message}</dd>
+                        </div>
+                      )}
+                    </dl>
+                    <div className="mt-6 flex justify-end">
+                      <button onClick={() => setShowModal(false)} className="px-4 py-2 rounded-md border border-gray-300 hover:bg-gray-50">Close</button>
+                    </div>
+                  </div>
+                )}
+                {(modalType === 'edit' || modalType === 'create') && (
+                  <form
+                    onSubmit={(e) => {
+                      e.preventDefault();
+                      if (modalType === 'edit' && (editingItem?._id || editingItem?.id)) {
+                        handleUpdate(editingItem._id || editingItem.id, formData);
+                      } else {
+                        handleCreate(formData);
+                      }
+                    }}
+                    className="p-6 space-y-4"
+                  >
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700">Full Name</label>
+                        <input
+                          type="text"
+                          value={formData.fullName || ''}
+                          onChange={(e) => setFormData({ ...formData, fullName: e.target.value })}
+                          required
+                          className="mt-1 w-full border border-gray-300 rounded-md px-3 py-2 focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700">Email</label>
+                        <input
+                          type="email"
+                          value={formData.email || ''}
+                          onChange={(e) => setFormData({ ...formData, email: e.target.value })}
+                          required
+                          className="mt-1 w-full border border-gray-300 rounded-md px-3 py-2 focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700">Phone</label>
+                        <input
+                          type="tel"
+                          value={formData.phone || ''}
+                          onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
+                          required
+                          className="mt-1 w-full border border-gray-300 rounded-md px-3 py-2 focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700">Status</label>
+                        <select
+                          value={formData.status || 'new'}
+                          onChange={(e) => setFormData({ ...formData, status: e.target.value })}
+                          className="mt-1 w-full border border-gray-300 rounded-md px-3 py-2 focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                        >
+                          <option value="new">New</option>
+                          <option value="in-progress">In Progress</option>
+                          <option value="resolved">Resolved</option>
+                          <option value="archived">Archived</option>
+                        </select>
+                      </div>
+                      <div className="sm:col-span-2">
+                        <label className="block text-sm font-medium text-gray-700">Message</label>
+                        <textarea
+                          rows={4}
+                          value={formData.message || ''}
+                          onChange={(e) => setFormData({ ...formData, message: e.target.value })}
+                          className="mt-1 w-full border border-gray-300 rounded-md px-3 py-2 focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                          placeholder="Optional notes or original message"
+                        />
+                      </div>
+                    </div>
+                    <div className="pt-2 flex items-center justify-end gap-3">
+                      <button type="button" onClick={() => setShowModal(false)} className="px-4 py-2 rounded-md border border-gray-300 hover:bg-gray-50">Cancel</button>
+                      <button type="submit" className="px-4 py-2 rounded-md bg-blue-600 text-white hover:bg-blue-700">
+                        {modalType === 'edit' ? 'Save Changes' : 'Create'}
+                      </button>
+                    </div>
+                  </form>
+                )}
+                {modalType === 'delete' && (
+                  <div className="p-6">
+                    <div className="flex items-start gap-3">
+                      <AlertTriangle className="w-6 h-6 text-red-600 mt-0.5" />
+                      <div>
+                        <h4 className="text-base font-semibold text-gray-900">Delete contact</h4>
+                        <p className="text-sm text-gray-600 mt-1">This action cannot be undone. Are you sure you want to delete this contact?</p>
+                      </div>
+                    </div>
+                    <div className="mt-6 flex justify-end gap-3">
+                      <button onClick={() => { setShowModal(false); setModalType(''); setDeletingId(null); }} className="px-4 py-2 rounded-md border border-gray-300 hover:bg-gray-50">Cancel</button>
+                      <button onClick={() => { if (deletingId) { handleDelete(deletingId, true); } setShowModal(false); setDeletingId(null); }} className="px-4 py-2 rounded-md bg-red-600 text-white hover:bg-red-700">Delete</button>
+                    </div>
+                  </div>
+                )}
+              </div>
+            </div>
+          )}
+        </main>
+      </div>
+
+
     </div>
   );
 };

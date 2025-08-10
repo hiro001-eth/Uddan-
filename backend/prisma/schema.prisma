@@ -1,0 +1,206 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id           String   @id @default(uuid())
+  name         String
+  email        String   @unique
+  passwordHash String
+  phone        String?
+  isActive     Boolean  @default(true)
+  mfaSecret    String?
+  lastLogin    DateTime?
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  roleId   String
+  role     Role     @relation(fields: [roleId], references: [id])
+
+  media        Media[]        @relation("UserMedia")
+  pages        Page[]         @relation("PageAuthor")
+  jobs         Job[]          @relation("JobCreator")
+  events       Event[]        @relation("EventCreator")
+  settings     Setting[]      @relation("SettingUpdater")
+  auditLogs    AuditLog[]
+  consultations Consultation[]
+
+  resetTokens ResetToken[]
+}
+
+model Role {
+  id          String   @id @default(uuid())
+  name        String   @unique
+  users       User[]
+  permissions RolePermission[]
+}
+
+model Permission {
+  id          String   @id @default(uuid())
+  name        String   @unique
+  description String
+  roles       RolePermission[]
+}
+
+model RolePermission {
+  roleId       String
+  permissionId String
+  role         Role        @relation(fields: [roleId], references: [id])
+  permission   Permission  @relation(fields: [permissionId], references: [id])
+
+  @@id([roleId, permissionId])
+}
+
+model Page {
+  id          String   @id @default(uuid())
+  slug        String   @unique
+  title       String
+  body        String   // HTML/Markdown
+  metaTitle   String?
+  metaDesc    String?
+  status      String   // draft, published, scheduled
+  authorId    String
+  author      User     @relation("PageAuthor", fields: [authorId], references: [id])
+  version     Int      @default(1)
+  publishedAt DateTime?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  versions    PageVersion[]
+}
+
+model PageVersion {
+  id        String   @id @default(uuid())
+  pageId    String
+  page      Page     @relation(fields: [pageId], references: [id])
+  title     String
+  body      String
+  metaTitle String?
+  metaDesc  String?
+  version   Int
+  createdAt DateTime @default(now())
+}
+
+model Job {
+  id           String   @id @default(uuid())
+  title        String
+  company      String
+  country      String
+  city         String?
+  jobType      String
+  salaryMin    Int?
+  salaryMax    Int?
+  description  String
+  requirements String?
+  benefits     String?
+  contactEmail String
+  status       String   // draft, open, closed
+  featured     Boolean  @default(false)
+  views        Int      @default(0)
+  createdBy    String
+  creator      User     @relation("JobCreator", fields: [createdBy], references: [id])
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+  applications Application[]
+}
+
+model Application {
+  id             String   @id @default(uuid())
+  jobId          String
+  job            Job      @relation(fields: [jobId], references: [id])
+  candidateName  String
+  candidatePhone String
+  candidateEmail String
+  resumePath     String?
+  coverLetter    String?
+  status         String   @default("pending") // pending, reviewed, rejected, accepted
+  notes          String?
+  appliedAt      DateTime @default(now())
+}
+
+model Event {
+  id          String   @id @default(uuid())
+  title       String
+  description String
+  venue       String
+  startAt     DateTime
+  endAt       DateTime
+  capacity    Int?
+  ticketPrice Int?
+  createdBy   String
+  creator     User     @relation("EventCreator", fields: [createdBy], references: [id])
+  createdAt   DateTime @default(now())
+}
+
+model Consultation {
+  id         String   @id @default(uuid())
+  bookingId  String?
+  userId     String?
+  user       User?    @relation(fields: [userId], references: [id])
+  date       DateTime
+  status     String
+  adminNotes String?
+  reminders  String?  // JSON string of reminders
+}
+
+model Media {
+  id             String   @id @default(uuid())
+  filename       String
+  mimeType       String
+  size           Int
+  width          Int?
+  height         Int?
+  path           String
+  storageBackend String
+  uploadedBy     String?
+  uploader       User?    @relation("UserMedia", fields: [uploadedBy], references: [id])
+  tags           String[]
+  createdAt      DateTime @default(now())
+}
+
+model Setting {
+  key       String   @id
+  valueJson String
+  updatedBy String?
+  updater   User?    @relation("SettingUpdater", fields: [updatedBy], references: [id])
+  updatedAt DateTime @default(now())
+}
+
+model AuditLog {
+  id         String   @id @default(uuid())
+  userId     String?
+  user       User?    @relation(fields: [userId], references: [id])
+  action     String
+  model      String
+  modelId    String?
+  changesJson String?
+  ip         String?
+  userAgent  String?
+  createdAt  DateTime @default(now())
+}
+
+model ResetToken {
+  id        String   @id @default(uuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id])
+  tokenHash String
+  expiresAt DateTime
+  usedAt    DateTime?
+  createdAt DateTime @default(now())
+  @@index([userId])
+}
+
+model Contact {
+  id        String   @id @default(uuid())
+  fullName  String
+  email     String
+  phone     String
+  status    String   @default("new") // new, in-progress, resolved, archived
+  message   String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}

@@ -63,15 +63,39 @@ function App() {
   const RequireAdmin = ({ children }) => {
     let token = null;
     let authAt = 0;
+    
     try {
       token = localStorage.getItem('adminToken');
       authAt = parseInt(localStorage.getItem('adminAuthAt') || '0', 10);
-    } catch {}
-    // Require a fresh auth within the last 60 minutes
+    } catch (error) {
+      // If localStorage is not available or corrupted, deny access
+      return <Navigate to="/secure-admin-access-2024" replace />;
+    }
+    
+    // Check if token exists and is valid
+    if (!token || !authAt) {
+      // Clean up invalid tokens
+      try {
+        localStorage.removeItem('adminToken');
+        localStorage.removeItem('adminAuthAt');
+      } catch {}
+      return <Navigate to="/secure-admin-access-2024" replace />;
+    }
+    
+    // Require a fresh auth within the last 24 hours (matching AdminDashboard logic)
     const now = Date.now();
-    const maxAgeMs = 60 * 60 * 1000; // 60 minutes
-    const isFresh = authAt && now - authAt < maxAgeMs;
-    if (!token || !isFresh) return <Navigate to="/secure-admin-access-2024" replace />;
+    const maxAgeMs = 24 * 60 * 60 * 1000; // 24 hours
+    const tokenAge = now - authAt;
+    
+    if (tokenAge > maxAgeMs) {
+      // Token expired, clean up and redirect
+      try {
+        localStorage.removeItem('adminToken');
+        localStorage.removeItem('adminAuthAt');
+      } catch {}
+      return <Navigate to="/secure-admin-access-2024" replace />;
+    }
+    
     return children;
   };
 
