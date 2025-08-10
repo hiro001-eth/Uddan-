@@ -12,21 +12,34 @@ const JobDetailPage = () => {
 
   useEffect(() => {
     if (stateJob) return; // already have job from state
-    // Fallback: simulate fetching minimal job info
-    setLoading(true);
-    const timer = setTimeout(() => {
-      setJob({
-        id,
-        title: 'Job Opportunity',
-        company: 'Company',
-        country: 'UAE',
-        salary: 'Competitive',
-        description: 'Detailed job description will be provided by our team during consultation.',
-        requirements: ['Relevant experience', 'Good communication', 'Valid passport']
-      });
-      setLoading(false);
-    }, 500);
-    return () => clearTimeout(timer);
+    const controller = new AbortController();
+    const fetchJob = async () => {
+      try {
+        setLoading(true);
+        const res = await fetch(`/api/jobs/${id}`, { signal: controller.signal });
+        const data = await res.json();
+        if (data.success && data.job) {
+          const j = data.job;
+          setJob({
+            id: j._id,
+            title: j.title,
+            company: j.company,
+            country: j.country,
+            salary: j.salary,
+            description: j.description,
+            requirements: j.requirements || []
+          });
+        } else {
+          setJob(null);
+        }
+      } catch (e) {
+        setJob(null);
+      } finally {
+        setLoading(false);
+      }
+    };
+    fetchJob();
+    return () => controller.abort();
   }, [id, stateJob]);
 
   if (loading) {

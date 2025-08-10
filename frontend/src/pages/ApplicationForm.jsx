@@ -33,9 +33,10 @@ const ApplicationForm = () => {
   };
 
   useEffect(() => {
-    // Simulate fetching job details
+    const controller = new AbortController();
     const fetchJob = async () => {
       try {
+<<<<<<< HEAD
         // In a real app, this would be an API call
         const sampleJob = {
           id: jobId,
@@ -49,6 +50,22 @@ const ApplicationForm = () => {
         // Pre-fill form data if jobId is available
         setFormData(prev => ({ ...prev, country: sampleJob.country || '' }));
 
+=======
+        const res = await fetch(`/api/jobs/${jobId}`, { signal: controller.signal });
+        const data = await res.json();
+        if (data.success && data.job) {
+          const j = data.job;
+          setJob({
+            id: j._id,
+            title: j.title,
+            company: j.company,
+            country: j.country,
+            salary: j.salary
+          });
+        } else {
+          throw new Error('Job not found');
+        }
+>>>>>>> 9e11769 (feat(contacts): add admin Contacts CRUD (backend Prisma model, REST endpoints, OpenAPI) and frontend Contacts table with View/Edit/Delete modals, sticky header, accessible actions; also add public job/app endpoints and application phone field)
       } catch (error) {
         toast.error('Failed to load job details');
         navigate('/jobs');
@@ -56,12 +73,14 @@ const ApplicationForm = () => {
     };
 
     fetchJob();
+    return () => controller.abort();
   }, [jobId, navigate]);
 
   // Handler for the submit button, updated for new API structure
   const onSubmit = async (data) => {
     setIsSubmitting(true);
     try {
+<<<<<<< HEAD
       const formDataToSend = new FormData();
 
       // Split name into firstName and lastName
@@ -92,6 +111,22 @@ const ApplicationForm = () => {
       if (!response.ok) {
         const err = await response.json().catch(() => ({}));
         throw new Error(err.detail || 'Submit failed');
+=======
+      const res = await fetch(`/api/applications`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          jobId,
+          name: data.name,
+          email: data.email,
+          phone: data.phone,
+          coverLetter: data.additionalInfo || ''
+        })
+      });
+      if (!res.ok) {
+        const err = await res.json().catch(() => ({}));
+        throw new Error(err.message || 'Submit failed');
+>>>>>>> 9e11769 (feat(contacts): add admin Contacts CRUD (backend Prisma model, REST endpoints, OpenAPI) and frontend Contacts table with View/Edit/Delete modals, sticky header, accessible actions; also add public job/app endpoints and application phone field)
       }
 
       setIsSubmitted(true);
