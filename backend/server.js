@@ -58,18 +58,74 @@ const adminLimiter = rateLimit({
   message: 'Too many admin requests, please try again later.',
 });
 
-// MongoDB Connection
-mongoose.connect(process.env.MONGODB_URI || 'mongodb://127.0.0.1:27017/uddaan-consultancy', {
-  useNewUrlParser: true,
-  useUnifiedTopology: true,
-})
-.then(() => {
-  console.log('✅ Connected to MongoDB');
-  initializeSystem();
-})
-.catch(err => console.error('❌ MongoDB connection error:', err));
+// Enhanced MongoDB Connection with Health Check
+const connectToMongoDB = async () => {
+  try {
+    const connection = await mongoose.connect(process.env.MONGODB_URI || 'mongodb://127.0.0.1:27017/uddaan-consultancy', {
+      useNewUrlParser: true,
+      useUnifiedTopology: true,
+      maxPoolSize: 10,
+      serverSelectionTimeoutMS: 5000,
+      socketTimeoutMS: 45000,
+      family: 4
+    });
 
-// Models
+    console.log('✅ MongoDB Connected Successfully');
+    console.log(`📊 Database: ${connection.connection.db.databaseName}`);
+    console.log(`🌐 Host: ${connection.connection.host}:${connection.connection.port}`);
+    
+    // Test database operations
+    await testDatabaseOperations();
+    await initializeSystem();
+    
+    return connection;
+  } catch (error) {
+    console.error('❌ MongoDB Connection Failed:', error.message);
+    process.exit(1);
+  }
+};
+
+const testDatabaseOperations = async () => {
+  try {
+    // Test basic CRUD operations
+    const testCollection = mongoose.connection.db.collection('health_check');
+    
+    // Create
+    await testCollection.insertOne({ test: 'connection', timestamp: new Date() });
+    
+    // Read
+    const doc = await testCollection.findOne({ test: 'connection' });
+    
+    // Update
+    await testCollection.updateOne({ test: 'connection' }, { $set: { verified: true } });
+    
+    // Delete
+    await testCollection.deleteOne({ test: 'connection' });
+    
+    console.log('✅ Database CRUD Operations: Working');
+  } catch (error) {
+    console.error('❌ Database CRUD Test Failed:', error.message);
+    throw error;
+  }
+};
+
+// Connection event handlers
+mongoose.connection.on('connected', () => {
+  console.log('📡 Mongoose connected to MongoDB');
+});
+
+mongoose.connection.on('error', (err) => {
+  console.error('❌ Mongoose connection error:', err);
+});
+
+mongoose.connection.on('disconnected', () => {
+  console.log('📡 Mongoose disconnected from MongoDB');
+});
+
+// Initialize connection
+connectToMongoDB();
+
+// Enhanced Models with proper exports
 const Job = require('./models/Job');
 const Application = require('./models/Application');
 const Admin = require('./models/Admin');
@@ -1044,8 +1100,408 @@ app.post('/api/admin/themes', authenticateAdmin, requirePermission('theme.update
   }
 });
 
-// Continue with existing job, application, testimonial, event routes...
-// (keeping the same structure as before)
+// ====== ADMIN CRUD ROUTES ======
+
+// Jobs Management
+app.get('/api/admin/jobs', authenticateAdmin, requirePermission('jobs.read'), async (req, res) => {
+  try {
+    const { page = 1, limit = 20, search, country, jobType, category, status } = req.query;
+
+    let query = {};
+    if (search) {
+      query.$or = [
+        { title: { $regex: search, $options: 'i' } },
+        { company: { $regex: search, $options: 'i' } },
+        { description: { $regex: search, $options: 'i' } }
+      ];
+    }
+    if (country) query.country = country;
+    if (jobType) query.jobType = jobType;
+    if (category) query.category = category;
+    if (status) query.isActive = status === 'active';
+
+    const skip = (page - 1) * parseInt(limit);
+    const jobs = await Job.find(query)
+      .populate('createdBy', 'name')
+      .sort({ createdAt: -1 })
+      .skip(skip)
+      .limit(parseInt(limit))
+      .lean();
+
+    const total = await Job.countDocuments(query);
+
+    res.json({
+      success: true,
+      jobs,
+      pagination: {
+        current: parseInt(page),
+        total: Math.ceil(total / limit),
+        totalJobs: total
+      }
+    });
+  } catch (error) {
+    res.status(500).json({ success: false, message: 'Server error', error: error.message });
+  }
+});
+
+app.post('/api/admin/jobs', authenticateAdmin, requirePermission('jobs.create'), auditLogger('create', 'Job'), async (req, res) => {
+  try {
+    const jobData = {
+      ...req.body,
+      createdBy: req.user._id
+    };
+
+    const job = new Job(jobData);
+    await job.save();
+
+    res.status(201).json({ 
+      success: true, 
+      message: 'Job created successfully', 
+      job 
+    });
+  } catch (error) {
+    res.status(400).json({ success: false, message: 'Validation error', error: error.message });
+  }
+});
+
+app.put('/api/admin/jobs/:id', authenticateAdmin, requirePermission('jobs.update'), auditLogger('update', 'Job'), async (req, res) => {
+  try {
+    const job = await Job.findByIdAndUpdate(
+      req.params.id,
+      { ...req.body, updatedAt: new Date() },
+      { new: true, runValidators: true }
+    ).populate('createdBy', 'name');
+
+    if (!job) {
+      return res.status(404).json({ success: false, message: 'Job not found' });
+    }
+
+    res.json({ success: true, message: 'Job updated successfully', job });
+  } catch (error) {
+    res.status(400).json({ success: false, message: 'Update error', error: error.message });
+  }
+});
+
+app.delete('/api/admin/jobs/:id', authenticateAdmin, requirePermission('jobs.delete'), auditLogger('delete', 'Job'), async (req, res) => {
+  try {
+    const job = await Job.findByIdAndDelete(req.params.id);
+    if (!job) {
+      return res.status(404).json({ success: false, message: 'Job not found' });
+    }
+
+    res.json({ success: true, message: 'Job deleted successfully' });
+  } catch (error) {
+    res.status(500).json({ success: false, message: 'Server error', error: error.message });
+  }
+});
+
+// Applications Management
+app.get('/api/admin/applications', authenticateAdmin, requirePermission('applications.read'), async (req, res) => {
+  try {
+    const { page = 1, limit = 20, status, search, jobId } = req.query;
+
+    let query = {};
+    if (status) query.status = status;
+    if (jobId) query.jobId = jobId;
+    if (search) {
+      query.$or = [
+        { firstName: { $regex: search, $options: 'i' } },
+        { lastName: { $regex: search, $options: 'i' } },
+        { email: { $regex: search, $options: 'i' } },
+        { applicationId: { $regex: search, $options: 'i' } }
+      ];
+    }
+
+    const skip = (page - 1) * parseInt(limit);
+    const applications = await Application.find(query)
+      .populate('jobId', 'title company country')
+      .populate('assignedTo', 'name')
+      .sort({ createdAt: -1 })
+      .skip(skip)
+      .limit(parseInt(limit))
+      .lean();
+
+    const total = await Application.countDocuments(query);
+
+    res.json({
+      success: true,
+      applications,
+      pagination: {
+        current: parseInt(page),
+        total: Math.ceil(total / limit),
+        totalApplications: total
+      }
+    });
+  } catch (error) {
+    res.status(500).json({ success: false, message: 'Server error', error: error.message });
+  }
+});
+
+app.put('/api/admin/applications/:id', authenticateAdmin, requirePermission('applications.update'), auditLogger('update', 'Application'), async (req, res) => {
+  try {
+    const application = await Application.findByIdAndUpdate(
+      req.params.id,
+      { ...req.body, updatedAt: new Date() },
+      { new: true, runValidators: true }
+    ).populate('jobId', 'title company').populate('assignedTo', 'name');
+
+    if (!application) {
+      return res.status(404).json({ success: false, message: 'Application not found' });
+    }
+
+    res.json({ success: true, message: 'Application updated successfully', application });
+  } catch (error) {
+    res.status(400).json({ success: false, message: 'Update error', error: error.message });
+  }
+});
+
+// Testimonials Management
+app.get('/api/admin/testimonials', authenticateAdmin, requirePermission('testimonials.read'), async (req, res) => {
+  try {
+    const { page = 1, limit = 20, search, featured } = req.query;
+
+    let query = {};
+    if (search) {
+      query.$or = [
+        { name: { $regex: search, $options: 'i' } },
+        { position: { $regex: search, $options: 'i' } },
+        { company: { $regex: search, $options: 'i' } }
+      ];
+    }
+    if (featured !== undefined) query.featured = featured === 'true';
+
+    const skip = (page - 1) * parseInt(limit);
+    const testimonials = await Testimonial.find(query)
+      .sort({ createdAt: -1 })
+      .skip(skip)
+      .limit(parseInt(limit))
+      .lean();
+
+    const total = await Testimonial.countDocuments(query);
+
+    res.json({
+      success: true,
+      testimonials,
+      pagination: {
+        current: parseInt(page),
+        total: Math.ceil(total / limit)
+      }
+    });
+  } catch (error) {
+    res.status(500).json({ success: false, message: 'Server error', error: error.message });
+  }
+});
+
+app.post('/api/admin/testimonials', authenticateAdmin, requirePermission('testimonials.create'), auditLogger('create', 'Testimonial'), async (req, res) => {
+  try {
+    const testimonial = new Testimonial(req.body);
+    await testimonial.save();
+
+    res.status(201).json({ success: true, message: 'Testimonial created successfully', testimonial });
+  } catch (error) {
+    res.status(400).json({ success: false, message: 'Validation error', error: error.message });
+  }
+});
+
+app.put('/api/admin/testimonials/:id', authenticateAdmin, requirePermission('testimonials.update'), auditLogger('update', 'Testimonial'), async (req, res) => {
+  try {
+    const testimonial = await Testimonial.findByIdAndUpdate(
+      req.params.id,
+      { ...req.body, updatedAt: new Date() },
+      { new: true, runValidators: true }
+    );
+
+    if (!testimonial) {
+      return res.status(404).json({ success: false, message: 'Testimonial not found' });
+    }
+
+    res.json({ success: true, message: 'Testimonial updated successfully', testimonial });
+  } catch (error) {
+    res.status(400).json({ success: false, message: 'Update error', error: error.message });
+  }
+});
+
+app.delete('/api/admin/testimonials/:id', authenticateAdmin, requirePermission('testimonials.delete'), auditLogger('delete', 'Testimonial'), async (req, res) => {
+  try {
+    const testimonial = await Testimonial.findByIdAndDelete(req.params.id);
+    if (!testimonial) {
+      return res.status(404).json({ success: false, message: 'Testimonial not found' });
+    }
+
+    res.json({ success: true, message: 'Testimonial deleted successfully' });
+  } catch (error) {
+    res.status(500).json({ success: false, message: 'Server error', error: error.message });
+  }
+});
+
+// Events Management
+app.get('/api/admin/events', authenticateAdmin, requirePermission('events.read'), async (req, res) => {
+  try {
+    const { page = 1, limit = 20, search, eventType } = req.query;
+
+    let query = {};
+    if (search) {
+      query.$or = [
+        { title: { $regex: search, $options: 'i' } },
+        { description: { $regex: search, $options: 'i' } },
+        { location: { $regex: search, $options: 'i' } }
+      ];
+    }
+    if (eventType) query.eventType = eventType;
+
+    const skip = (page - 1) * parseInt(limit);
+    const events = await Event.find(query)
+      .sort({ startDate: -1 })
+      .skip(skip)
+      .limit(parseInt(limit))
+      .lean();
+
+    const total = await Event.countDocuments(query);
+
+    res.json({
+      success: true,
+      events,
+      pagination: {
+        current: parseInt(page),
+        total: Math.ceil(total / limit)
+      }
+    });
+  } catch (error) {
+    res.status(500).json({ success: false, message: 'Server error', error: error.message });
+  }
+});
+
+app.post('/api/admin/events', authenticateAdmin, requirePermission('events.create'), auditLogger('create', 'Event'), async (req, res) => {
+  try {
+    const event = new Event(req.body);
+    await event.save();
+
+    res.status(201).json({ success: true, message: 'Event created successfully', event });
+  } catch (error) {
+    res.status(400).json({ success: false, message: 'Validation error', error: error.message });
+  }
+});
+
+app.put('/api/admin/events/:id', authenticateAdmin, requirePermission('events.update'), auditLogger('update', 'Event'), async (req, res) => {
+  try {
+    const event = await Event.findByIdAndUpdate(
+      req.params.id,
+      { ...req.body, updatedAt: new Date() },
+      { new: true, runValidators: true }
+    );
+
+    if (!event) {
+      return res.status(404).json({ success: false, message: 'Event not found' });
+    }
+
+    res.json({ success: true, message: 'Event updated successfully', event });
+  } catch (error) {
+    res.status(400).json({ success: false, message: 'Update error', error: error.message });
+  }
+});
+
+app.delete('/api/admin/events/:id', authenticateAdmin, requirePermission('events.delete'), auditLogger('delete', 'Event'), async (req, res) => {
+  try {
+    const event = await Event.findByIdAndDelete(req.params.id);
+    if (!event) {
+      return res.status(404).json({ success: false, message: 'Event not found' });
+    }
+
+    res.json({ success: true, message: 'Event deleted successfully' });
+  } catch (error) {
+    res.status(500).json({ success: false, message: 'Server error', error: error.message });
+  }
+});
+
+// Settings Management
+app.get('/api/admin/settings', authenticateAdmin, requirePermission('settings.read'), async (req, res) => {
+  try {
+    const settings = await Setting.findOne().lean();
+    res.json({ success: true, settings: settings || {} });
+  } catch (error) {
+    res.status(500).json({ success: false, message: 'Server error', error: error.message });
+  }
+});
+
+app.put('/api/admin/settings', authenticateAdmin, requirePermission('settings.update'), auditLogger('update', 'Setting'), async (req, res) => {
+  try {
+    const settings = await Setting.findOneAndUpdate(
+      {},
+      { ...req.body, updatedAt: new Date() },
+      { new: true, upsert: true, runValidators: true }
+    );
+
+    res.json({ success: true, message: 'Settings updated successfully', settings });
+  } catch (error) {
+    res.status(400).json({ success: false, message: 'Update error', error: error.message });
+  }
+});
+
+// Database health check endpoint
+app.get('/api/admin/database/health', authenticateAdmin, async (req, res) => {
+  try {
+    const dbState = mongoose.connection.readyState;
+    const states = {
+      0: 'disconnected',
+      1: 'connected',
+      2: 'connecting',
+      3: 'disconnecting'
+    };
+
+    const stats = {
+      state: states[dbState],
+      host: mongoose.connection.host,
+      port: mongoose.connection.port,
+      database: mongoose.connection.name,
+      collections: Object.keys(mongoose.connection.collections),
+      uptime: process.uptime()
+    };
+
+    // Test operations
+    const testResults = {
+      canRead: false,
+      canWrite: false,
+      canUpdate: false,
+      canDelete: false
+    };
+
+    try {
+      // Test read
+      await Job.findOne().limit(1);
+      testResults.canRead = true;
+
+      // Test write
+      const testDoc = new mongoose.connection.db.collection('health_test');
+      await testDoc.insertOne({ test: true, timestamp: new Date() });
+      testResults.canWrite = true;
+
+      // Test update
+      await testDoc.updateOne({ test: true }, { $set: { updated: true } });
+      testResults.canUpdate = true;
+
+      // Test delete
+      await testDoc.deleteOne({ test: true });
+      testResults.canDelete = true;
+    } catch (error) {
+      console.error('Database operation test failed:', error);
+    }
+
+    res.json({
+      success: true,
+      database: {
+        ...stats,
+        operations: testResults,
+        healthy: dbState === 1 && testResults.canRead && testResults.canWrite
+      }
+    });
+  } catch (error) {
+    res.status(500).json({ 
+      success: false, 
+      message: 'Database health check failed', 
+      error: error.message 
+    });
+  }
+});
 
 // Serve uploaded files
 app.use('/uploads', express.static('uploads'));
@@ -1068,14 +1524,103 @@ if (!fs.existsSync('uploads/thumbnails')) {
   fs.mkdirSync('uploads/thumbnails', { recursive: true });
 }
 
-// Health check endpoint
-app.get('/api/health', (req, res) => {
-  res.json({ 
-    success: true, 
-    message: 'Uddaan Consultancy API is running',
-    timestamp: new Date().toISOString(),
-    environment: process.env.NODE_ENV || 'development'
-  });
+// Comprehensive health check endpoint
+app.get('/api/health', async (req, res) => {
+  try {
+    const health = {
+      success: true,
+      message: 'Uddaan Consultancy API is running',
+      timestamp: new Date().toISOString(),
+      environment: process.env.NODE_ENV || 'development',
+      version: '1.0.0',
+      uptime: process.uptime(),
+      memory: process.memoryUsage(),
+      database: {
+        connected: false,
+        state: 'unknown',
+        collections: [],
+        operations: {
+          read: false,
+          write: false,
+          update: false,
+          delete: false
+        }
+      }
+    };
+
+    // Check database connection
+    const dbState = mongoose.connection.readyState;
+    const states = {
+      0: 'disconnected',
+      1: 'connected',
+      2: 'connecting',
+      3: 'disconnecting'
+    };
+
+    health.database.state = states[dbState];
+    health.database.connected = dbState === 1;
+
+    if (health.database.connected) {
+      // Get collection names
+      try {
+        const collections = await mongoose.connection.db.listCollections().toArray();
+        health.database.collections = collections.map(col => col.name);
+      } catch (error) {
+        health.database.collections = ['Error fetching collections'];
+      }
+
+      // Test database operations
+      try {
+        const testCollection = mongoose.connection.db.collection('health_test');
+        
+        // Test write
+        await testCollection.insertOne({ test: true, timestamp: new Date() });
+        health.database.operations.write = true;
+
+        // Test read
+        const doc = await testCollection.findOne({ test: true });
+        health.database.operations.read = !!doc;
+
+        // Test update
+        await testCollection.updateOne({ test: true }, { $set: { updated: true } });
+        health.database.operations.update = true;
+
+        // Test delete
+        await testCollection.deleteOne({ test: true });
+        health.database.operations.delete = true;
+
+      } catch (error) {
+        console.error('Database operations test failed:', error);
+      }
+
+      // Get collection counts
+      try {
+        const stats = {};
+        stats.users = await User.countDocuments();
+        stats.jobs = await Job.countDocuments();
+        stats.applications = await Application.countDocuments();
+        stats.testimonials = await Testimonial.countDocuments();
+        stats.events = await Event.countDocuments();
+        health.database.stats = stats;
+      } catch (error) {
+        health.database.stats = { error: 'Could not fetch stats' };
+      }
+    }
+
+    // Determine overall health
+    health.healthy = health.database.connected && 
+                    health.database.operations.read && 
+                    health.database.operations.write;
+
+    res.status(health.healthy ? 200 : 503).json(health);
+  } catch (error) {
+    res.status(500).json({
+      success: false,
+      message: 'Health check failed',
+      error: error.message,
+      timestamp: new Date().toISOString()
+    });
+  }
 });
 
 app.listen(PORT, '0.0.0.0', () => {

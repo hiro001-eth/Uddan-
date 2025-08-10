@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Search, MapPin, Briefcase, ArrowRight, Users, Globe, Award, Shield, Quote } from 'lucide-react';
 
@@ -8,6 +8,62 @@ const HomePage = () => {
     country: '',
     jobType: ''
   });
+  const [filters, setFilters] = useState({
+    country: '',
+    jobType: '',
+    search: ''
+  });
+
+  // State for jobs data
+  const [jobsData, setJobsData] = useState({
+    jobs: [],
+    loading: true,
+    error: null,
+    pagination: { current: 1, total: 1 }
+  });
+
+  // Fetch jobs from API
+  useEffect(() => {
+    fetchJobs();
+  }, [filters]);
+
+  const fetchJobs = async () => {
+    try {
+      setJobsData(prev => ({ ...prev, loading: true }));
+
+      const params = new URLSearchParams();
+      if (filters.country) params.append('country', filters.country);
+      if (filters.jobType) params.append('jobType', filters.jobType);
+      if (filters.search) params.append('search', filters.search);
+      params.append('limit', '8');
+      params.append('featured', 'true');
+
+      const response = await fetch(`/api/jobs?${params.toString()}`);
+      const data = await response.json();
+
+      if (data.success) {
+        setJobsData({
+          jobs: data.jobs,
+          loading: false,
+          error: null,
+          pagination: data.pagination
+        });
+      } else {
+        setJobsData(prev => ({
+          ...prev,
+          loading: false,
+          error: 'Failed to fetch jobs'
+        }));
+      }
+    } catch (error) {
+      console.error('Error fetching jobs:', error);
+      setJobsData(prev => ({
+        ...prev,
+        loading: false,
+        error: 'Failed to connect to server'
+      }));
+    }
+  };
 
   const handleSearch = () => {
     const params = new URLSearchParams();
@@ -18,6 +74,10 @@ const HomePage = () => {
 
   const handleInputChange = (field, value) => {
     setSearchData(prev => ({ ...prev, [field]: value }));
+  };
+
+  const handleFilterChange = (field, value) => {
+    setFilters(prev => ({ ...prev, [field]: value }));
   };
 
   const countries = [
@@ -90,7 +150,7 @@ const HomePage = () => {
           <p className="text-xl md:text-2xl mb-8 max-w-3xl mx-auto animate-slide-up">
             Nepali applicants can explore vacancies across Gulf countries and apply instantly
           </p>
-          
+
           {/* Search Box */}
           <div className="max-w-4xl mx-auto">
             <div className="bg-white rounded-2xl shadow-2xl p-8">
@@ -150,7 +210,7 @@ const HomePage = () => {
               We provide comprehensive support to help you achieve your international dreams
             </p>
           </div>
-          
+
           <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-8">
             {features.map((feature, index) => (
               <div key={index} className="testimonial-card-premium text-center group">
@@ -165,8 +225,82 @@ const HomePage = () => {
         </div>
       </section>
 
+      {/* Job Listings Section */}
+      <section id="jobs" className="py-20 bg-gray-50">
+        <div className="container mx-auto px-4">
+          <div className="text-center mb-16">
+            <h2 className="text-4xl font-bold mb-6 gradient-text">Featured Jobs</h2>
+            <p className="text-xl text-gray-600 max-w-3xl mx-auto">
+              Explore the latest job openings from our top partner companies
+            </p>
+          </div>
+          <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-8">
+            {jobsData.loading ? (
+              <div className="col-span-full flex justify-center py-12">
+                <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
+              </div>
+            ) : jobsData.error ? (
+              <div className="col-span-full text-center py-12">
+                <p className="text-red-600 mb-4">{jobsData.error}</p>
+                <button
+                  onClick={fetchJobs}
+                  className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
+                >
+                  Try Again
+                </button>
+              </div>
+            ) : jobsData.jobs.length === 0 ? (
+              <div className="col-span-full text-center py-12">
+                <p className="text-gray-600 mb-4">No jobs found matching your criteria</p>
+                <button
+                  onClick={() => setFilters({ search: '', country: '', jobType: '' })}
+                  className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
+                >
+                  Clear Filters
+                </button>
+              </div>
+            ) : (
+              jobsData.jobs.map((job, index) => (
+                <div key={job._id || index} className="job-card-premium">
+                  <div className="p-6">
+                    <h3 className="text-xl font-bold text-gray-800 mb-2 truncate">{job.title}</h3>
+                    <p className="text-sm text-gray-500 mb-1 truncate">{job.company}</p>
+                    <p className="text-sm text-gray-500 mb-4 truncate">{job.location}</p>
+                    <div className="flex flex-wrap gap-2 mb-4">
+                      <span className="px-3 py-1 bg-blue-100 text-blue-800 text-xs font-medium rounded-full">
+                        {job.jobType}
+                      </span>
+                      <span className="px-3 py-1 bg-green-100 text-green-800 text-xs font-medium rounded-full">
+                        {job.employmentType}
+                      </span>
+                    </div>
+                    <p className="text-lg font-semibold text-gray-800 mb-4">
+                      {`$${job.salaryMin}-${job.salaryMax}/month`}
+                    </p>
+                    <div className="flex justify-between text-sm text-gray-500">
+                      <span>{job.timeAgo || new Date(job.createdAt).toLocaleDateString()}</span>
+                      <span>{job.views} Views</span>
+                      <span>{job.applications} Applications</span>
+                    </div>
+                  </div>
+                  <div className="p-6 border-t border-gray-200 flex justify-end">
+                    <button
+                      onClick={() => navigate(`/jobs/${job._id}`)}
+                      className="btn-premium-sm flex items-center space-x-1"
+                    >
+                      <span>View Details</span>
+                      <ArrowRight className="w-4 h-4" />
+                    </button>
+                  </div>
+                </div>
+              ))
+            )}
+          </div>
+        </div>
+      </section>
+
       {/* Testimonials in Home */}
-      <section id="testimonials" className="py-20 bg-gray-50">
+      <section id="testimonials" className="py-20 bg-white">
         <div className="container mx-auto px-4">
           <div className="text-center mb-16">
             <h2 className="text-4xl font-bold mb-6 gradient-text">What Our Clients Say</h2>
@@ -201,7 +335,7 @@ const HomePage = () => {
               Numbers that speak for our commitment and success
             </p>
           </div>
-          
+
           <div className="grid md:grid-cols-4 gap-8">
             {stats.map((stat, index) => (
               <div key={index} className="text-center animate-bounce-gentle">
@@ -247,4 +381,4 @@ const HomePage = () => {
   );
 };
 
-export default HomePage; 
+export default HomePage;

@@ -1,6 +1,7 @@
 
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
+import JobFormModal from '../components/admin/JobFormModal';
 import {
   BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer,
   LineChart, Line, PieChart, Pie, Cell, Area, AreaChart
@@ -422,9 +423,10 @@ const AdminDashboard = () => {
             </div>
             <button
               onClick={() => {
-                setModalType('create');
+                setModalType(`create_${activeTab}`);
                 setShowModal(true);
                 setFormData({});
+                setEditingItem(null);
               }}
               className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 flex items-center space-x-2"
             >
@@ -463,7 +465,7 @@ const AdminDashboard = () => {
                       onClick={() => {
                         setEditingItem(item);
                         setFormData(item);
-                        setModalType('edit');
+                        setModalType(`edit_${activeTab}`);
                         setShowModal(true);
                       }}
                       className="text-blue-600 hover:text-blue-900"
@@ -556,28 +558,71 @@ const AdminDashboard = () => {
         );
 
       case 'jobs':
-        return renderDataTable(
-          data.jobs,
-          [
-            { key: 'title', label: 'Title' },
-            { key: 'company', label: 'Company' },
-            { key: 'country', label: 'Country' },
-            { key: 'jobType', label: 'Type' },
-            { 
-              key: 'isActive', 
-              label: 'Status',
-              render: (item) => (
-                <span className={`px-2 py-1 text-xs rounded-full ${
-                  item.isActive ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'
-                }`}>
-                  {item.isActive ? 'Active' : 'Inactive'}
-                </span>
-              )
-            },
-            { key: 'applications', label: 'Applications' },
-            { key: 'views', label: 'Views' }
-          ],
-          'Jobs'
+        return (
+          <div className="space-y-6">
+            {renderDataTable(
+              data.jobs,
+              [
+                { key: 'title', label: 'Title' },
+                { key: 'company', label: 'Company' },
+                { key: 'country', label: 'Country' },
+                { key: 'jobType', label: 'Type' },
+                { 
+                  key: 'salaryRange', 
+                  label: 'Salary',
+                  render: (item) => `${item.currency} ${item.salaryMin}-${item.salaryMax}/month`
+                },
+                { 
+                  key: 'featured', 
+                  label: 'Featured',
+                  render: (item) => (
+                    <span className={`px-2 py-1 text-xs rounded-full ${
+                      item.featured ? 'bg-yellow-100 text-yellow-800' : 'bg-gray-100 text-gray-800'
+                    }`}>
+                      {item.featured ? 'Yes' : 'No'}
+                    </span>
+                  )
+                },
+                { 
+                  key: 'isActive', 
+                  label: 'Status',
+                  render: (item) => (
+                    <span className={`px-2 py-1 text-xs rounded-full ${
+                      item.isActive ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'
+                    }`}>
+                      {item.isActive ? 'Active' : 'Inactive'}
+                    </span>
+                  )
+                },
+                { key: 'applications', label: 'Applications' },
+                { key: 'views', label: 'Views' },
+                { 
+                  key: 'createdAt', 
+                  label: 'Posted',
+                  render: (item) => new Date(item.createdAt).toLocaleDateString()
+                }
+              ],
+              'Jobs'
+            )}
+            
+            {/* Job Form Modal */}
+            {showModal && (modalType.includes('jobs') || modalType.includes('job')) && (
+              <JobFormModal
+                isOpen={showModal}
+                onClose={() => {
+                  setShowModal(false);
+                  setEditingItem(null);
+                  setFormData({});
+                }}
+                onSubmit={editingItem ? 
+                  (data) => handleUpdate(editingItem._id, data) : 
+                  handleCreate
+                }
+                initialData={editingItem}
+                isEditing={!!editingItem}
+              />
+            )}
+          </div>
         );
 
       case 'applications':

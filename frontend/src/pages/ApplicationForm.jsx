@@ -10,8 +10,27 @@ const ApplicationForm = () => {
   const [job, setJob] = useState(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isSubmitted, setIsSubmitted] = useState(false);
-  
+  // State for form data and submission status
+  const [formData, setFormData] = useState({
+    name: '',
+    email: '',
+    phone: '',
+    country: '',
+    coverLetter: '',
+    resume: null
+  });
+  const [submitStatus, setSubmitStatus] = useState('');
+
   const { register, handleSubmit, formState: { errors } } = useForm();
+
+  // Function to handle input changes
+  const handleInputChange = (e) => {
+    const { name, value, files } = e.target;
+    setFormData(prev => ({
+      ...prev,
+      [name]: files ? files[0] : value
+    }));
+  };
 
   useEffect(() => {
     // Simulate fetching job details
@@ -26,6 +45,10 @@ const ApplicationForm = () => {
           salary: "$4000-6000/month"
         };
         setJob(sampleJob);
+
+        // Pre-fill form data if jobId is available
+        setFormData(prev => ({ ...prev, country: sampleJob.country || '' }));
+
       } catch (error) {
         toast.error('Failed to load job details');
         navigate('/jobs');
@@ -35,23 +58,42 @@ const ApplicationForm = () => {
     fetchJob();
   }, [jobId, navigate]);
 
+  // Handler for the submit button, updated for new API structure
   const onSubmit = async (data) => {
     setIsSubmitting(true);
     try {
-      const res = await fetch(`/api/jobs/${jobId}/apply`, {
+      const formDataToSend = new FormData();
+
+      // Split name into firstName and lastName
+      const nameParts = data.name.trim().split(' ');
+      const firstName = nameParts[0] || '';
+      const lastName = nameParts.slice(1).join(' ') || firstName;
+
+      // Add job ID
+      formDataToSend.append('jobId', jobId);
+      formDataToSend.append('firstName', firstName);
+      formDataToSend.append('lastName', lastName);
+      formDataToSend.append('email', data.email);
+      formDataToSend.append('phone', data.phone);
+      formDataToSend.append('nationality', data.country);
+      formDataToSend.append('currentLocation[country]', data.country); // Assuming nationality and current country are the same for simplicity
+      formDataToSend.append('currentLocation[city]', 'Not specified'); // Default city, can be updated
+      formDataToSend.append('coverLetter', data.additionalInfo || '');
+
+      if (data.resume && data.resume.length > 0) {
+        formDataToSend.append('resume', data.resume[0]);
+      }
+
+      const response = await fetch(`/api/jobs/${jobId}/apply`, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          name: data.name,
-          email: data.email,
-          phone: data.phone,
-          cover_letter: data.additionalInfo || ''
-        })
+        body: formDataToSend
       });
-      if (!res.ok) {
-        const err = await res.json().catch(() => ({}));
+
+      if (!response.ok) {
+        const err = await response.json().catch(() => ({}));
         throw new Error(err.detail || 'Submit failed');
       }
+
       setIsSubmitted(true);
       toast.success('Application submitted successfully!');
     } catch (error) {
@@ -82,7 +124,7 @@ const ApplicationForm = () => {
             </div>
             <h2 className="text-2xl font-bold text-gray-800 mb-4">Application Submitted!</h2>
             <p className="text-gray-600 mb-6">
-              Thank you for your interest in the {job.title} position at {job.company}. 
+              Thank you for your interest in the {job.title} position at {job.company}.
               Our team will review your application and contact you within 24-48 hours.
             </p>
             <div className="space-y-3">
@@ -148,7 +190,7 @@ const ApplicationForm = () => {
                 </label>
                 <input
                   type="text"
-                  {...register('name', { 
+                  {...register('name', {
                     required: 'Full name is required',
                     minLength: {
                       value: 2,
@@ -171,7 +213,7 @@ const ApplicationForm = () => {
                 </label>
                 <input
                   type="email"
-                  {...register('email', { 
+                  {...register('email', {
                     required: 'Email is required',
                     pattern: {
                       value: /^[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}$/i,
@@ -194,7 +236,7 @@ const ApplicationForm = () => {
                 </label>
                 <input
                   type="tel"
-                  {...register('phone', { 
+                  {...register('phone', {
                     required: 'Phone number is required',
                     pattern: {
                       value: /^[0-9+\-\s()]+$/,
@@ -209,6 +251,23 @@ const ApplicationForm = () => {
                 )}
               </div>
 
+              {/* Country / Nationality */}
+              <div>
+                <label className="form-label-premium">
+                  Country / Nationality *
+                </label>
+                <input
+                  type="text"
+                  {...register('country', { required: 'Country is required' })}
+                  className="form-input-premium"
+                  placeholder="Enter your country of residence or nationality"
+                />
+                {errors.country && (
+                  <p className="text-red-500 text-sm mt-1">{errors.country.message}</p>
+                )}
+              </div>
+
+
               {/* Additional Information */}
               <div>
                 <label className="form-label-premium">
@@ -220,6 +279,23 @@ const ApplicationForm = () => {
                   className="form-input-premium"
                   placeholder="Tell us about your experience, skills, or any other relevant information..."
                 />
+              </div>
+
+              {/* Resume Upload */}
+              <div>
+                <label className="form-label-premium">
+                  Upload Resume (Optional)
+                </label>
+                <input
+                  type="file"
+                  {...register('resume')}
+                  className="form-input-premium file:bg-blue-500 file:text-white file:border-0 file:cursor-pointer file:rounded-md file:px-3 file:py-2 file:mr-4"
+                  accept=".pdf,.doc,.docx"
+                  onChange={handleInputChange} // Ensure this is linked to formData state if not using react-hook-form directly for file
+                />
+                {errors.resume && (
+                  <p className="text-red-500 text-sm mt-1">{errors.resume.message}</p>
+                )}
               </div>
 
               {/* Submit Button */}
@@ -263,4 +339,4 @@ const ApplicationForm = () => {
   );
 };
 
-export default ApplicationForm; 
+export default ApplicationForm;
