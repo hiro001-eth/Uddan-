@@ -1,0 +1,339 @@
+look at these i have connect the mongo databases , check wheather the databases is connected or not , if not then connect it 
+
+how databases will be ? 
+1. secured , safe and backup 
+2. all the CRUD operation create , update , read , delete opertaion can perfrome smoothly with out any error .
+3. all the databases name should be connected to frontend , backend  
+smoothly connect through id and class so that client enter the form for job , add contact details should store in databases . 
+4. from the backend gui based also able to show the available jobs in client side so that client can change the best and sutiable job that is available in the comapany . and see the structure of job potral from forntside how it looks 
+Find Your Dream Job Abroad
+Discover exciting career opportunities in Gulf countries and beyond
+
+Search jobs...
+
+All Countries
+
+All Job Types
+Clear Filters
+8 Job Opportunities Found
+Filtered Results
+Software Engineer
+TechCorp Dubai
+
+Featured
+UAE
+Full-time
+$4000-6000/month
+Posted Jan 15, 2024
+We are looking for a skilled Software Engineer to join our dynamic team in Dubai. Experience with React, Node.js, and cloud technologies required.
+
+Requirements:
+3+ years experience
+React/Node.js
+Cloud platforms
++1 more
+245 views
+18 applications
+View Details
+Quick Apply
+Don\'t see the perfect opportunity?
+Contact Our Team
+•
+Schedule Consultation
+Marketing Manager
+Global Retail Qatar
+
+Featured
+Qatar
+Full-time
+$3500-5000/month
+Posted Jan 20, 2024
+Join our marketing team in Doha. Lead digital marketing campaigns and brand development for our retail operations across Qatar.
+
+Requirements:
+5+ years experience
+Digital marketing
+Team leadership
++1 more
+189 views
+12 applications
+View Details
+Quick Apply
+Don\'t see the perfect opportunity?
+Contact Our Team
+•
+Schedule Consultation
+Accountant
+Finance Solutions Saudi
+
+Saudi Arabia
+Full-time
+$3000-4500/month
+Posted Jan 25, 2024
+Experienced accountant needed for our Riyadh office. Handle financial reporting, tax compliance, and budgeting for our growing company.
+
+Requirements:
+CPA/ACCA
+3+ years experience
+SAP knowledge
++1 more
+156 views
+8 applications
+View Details
+Quick Apply
+Don\'t see the perfect opportunity?
+Contact Our Team
+•
+Schedule Consultation
+Nurse
+Medical Center Kuwait
+
+Kuwait
+Full-time
+$2500-4000/month
+Posted Jan 30, 2024
+Registered nurses needed for our state-of-the-art medical facility in Kuwait City. Excellent benefits and career growth opportunities.
+
+Requirements:
+BSN degree
+2+ years experience
+Valid license
++1 more
+203 views
+15 applications
+View Details
+Quick Apply
+Don\'t see the perfect opportunity?
+Contact Our Team
+•
+Schedule Consultation
+Construction Supervisor
+BuildCorp Oman
+
+Oman
+Full-time
+$2800-4200/month
+Posted Feb 5, 2024
+Supervise construction projects in Muscat. Manage teams, ensure safety standards, and coordinate with clients and contractors.
+
+Requirements:
+Civil engineering degree
+5+ years experience
+Safety certification
++1 more
+134 views
+6 applications
+View Details
+Quick Apply
+Don\'t see the perfect opportunity?
+Contact Our Team
+•
+Schedule Consultation
+Hotel Manager
+Luxury Hotels Bahrain
+
+Bahrain
+Full-time
+$3200-4800/month
+Posted Feb 10, 2024
+Manage operations for our luxury hotel in Manama. Oversee staff, guest services, and ensure exceptional customer experience.
+
+Requirements:
+Hospitality degree
+3+ years management
+Customer service
++1 more
+167 views
+9 applications
+View Details
+Quick Apply
+Don\'t see the perfect opportunity?
+Contact Our Team
+•
+Schedule Consultation
+Sales Executive
+Tech Solutions UAE
+
+UAE
+Full-time
+$2500-4000/month
+Posted Feb 15, 2024
+Drive sales for our technology solutions in Dubai. Build client relationships and achieve sales targets in the competitive tech market.
+
+Requirements:
+Sales experience
+Tech knowledge
+Communication skills
++1 more
+145 views
+11 applications
+View Details
+Quick Apply
+Don\'t see the perfect opportunity?
+Contact Our Team
+•
+Schedule Consultation
+Teacher
+International School Qatar
+
+Qatar
+Full-time
+$3000-4500/month
+Posted Feb 20, 2024
+Join our international school in Doha. Teach English, Math, or Science to diverse student body. Excellent benefits and professional development.
+
+Requirements:
+Teaching degree
+2+ years experience
+English fluency
++1 more
+178 views
+13 applications
+View Details
+Quick Apply
+Don\'t see the perfect opportunity?
+Contact Our Team
+•
+Schedule Consultation  
+
+all the things is in these section can be manually through admin pannel and also store in databases all the things used to show the job suppose Teacher
+International School Qatar
+
+Qatar
+Full-time
+$3000-4500/month
+Posted Feb 20, 2024
+Join our international school in Doha. Teach English, Math, or Science to diverse student body. Excellent benefits and professional development.
+
+Requirements:
+Teaching degree
+2+ years experience
+English fluency
++1 more
+178 views
+13 applications
+View Details
+Quick Apply
+Don\'t see the perfect opportunity?
+Contact Our Team
+•
+Schedule Consultation
+
+loacation , time full time or anythings , salary range , posted data and decription , requriedment and all that shown for job can able to change throught the admin pannel section from crud ,
+5. and remove the default job which is showing and from now onwards it should look like fully connect to mvp also and run smoothly 
+
+6. and the job apply or quick apply form also should also can to admin pannel and store in databases so that admin can contact it through number and email  . manually in future i am going to add ai agents for these 
+
+7. in admin pannel dashboard update to these section Admin Panel
+
+
+Dashboard
+
+Users
+
+Jobs
+
+Applications
+
+Consultations
+
+Pages
+
+Media
+
+Events
+
+Testimonials
+
+Audit Logs
+
+Themes
+
+Settings
+
+Logout
+dashboard
+Manage your dashboard efficiently
+
+3
+
+A
+Admin
+Total Jobs
+
+0
+
+0 active
+
++12%
+from last month
+Applications
+
+0
+
+0 new
+
++8%
+from last month
+Consultations
+
+0
+
+0 pending
+
++15%
+from last month
+Active Users
+
+0
+
+System users
+
++3%
+from last month
+Monthly Statistics
+Application Status Distribution
+Recent Applications
+System Activity
+
+
+8. check the function of the work of these features Admin Panel
+
+
+Dashboard
+
+Users
+
+Jobs
+
+Applications
+
+Consultations
+
+Pages
+
+Media
+
+Events
+
+Testimonials
+
+Audit Logs
+
+Themes
+
+Settings
+
+Logout
+jobs
+Manage your jobs efficiently
+
+3
+
+A
+Admin
+Jobs
+Search jobs...
+
+Add New
+ make able to run all the function through frontend and backend and database , manage route of these section method post get and all admin pannel should be perfect by change something here it can change on frontend and databases too 
