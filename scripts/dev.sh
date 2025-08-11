@@ -111,7 +111,7 @@ echo "🔧 Backend will run on http://localhost:$BACKEND_PORT"
 # 7) Start backend and frontend together (avoid hardcoded PORTs in npm scripts)
 echo "🚀 Starting dev servers..."
 # Choose backend stack: js (Node/Mongoose server.js) or ts (TS/Prisma src/index.ts)
-BACK_STACK=${BACK_STACK:-js}
+BACK_STACK=${BACK_STACK:-ts}
 if [[ "$BACK_STACK" == "ts" ]]; then
   BACK_CMD="cd '$ROOT_DIR/backend' && PORT=$BACKEND_PORT CORS_ORIGIN=http://localhost:$FRONTEND_PORT npm run dev"
 else

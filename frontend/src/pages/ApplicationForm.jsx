@@ -32,111 +32,59 @@ const ApplicationForm = () => {
     }));
   };
 
-  useEffect(() => {
-    const controller = new AbortController();
-    const fetchJob = async () => {
-      try {
-<<<<<<< HEAD
-        // In a real app, this would be an API call
-        const sampleJob = {
-          id: jobId,
-          title: "Software Engineer",
-          company: "TechCorp Dubai",
-          country: "UAE",
-          salary: "$4000-6000/month"
-        };
-        setJob(sampleJob);
-
-        // Pre-fill form data if jobId is available
-        setFormData(prev => ({ ...prev, country: sampleJob.country || '' }));
-
-=======
-        const res = await fetch(`/api/jobs/${jobId}`, { signal: controller.signal });
-        const data = await res.json();
-        if (data.success && data.job) {
-          const j = data.job;
-          setJob({
-            id: j._id,
-            title: j.title,
-            company: j.company,
-            country: j.country,
-            salary: j.salary
-          });
-        } else {
-          throw new Error('Job not found');
+    useEffect(() => {
+      const controller = new AbortController();
+      const fetchJob = async () => {
+        try {
+          const res = await fetch(`/api/jobs/${jobId}`, { signal: controller.signal, credentials: 'include' });
+          const payload = await res.json();
+          const j = payload?.data;
+          if (j && j.id) {
+            setJob({ id: j.id, title: j.title, company: j.company, country: j.country, salary: j.salaryMin ? `${j.salaryMin}-${j.salaryMax || ''}` : '' });
+            setFormData(prev => ({ ...prev, country: j.country || '' }));
+          } else {
+            throw new Error('Job not found');
+          }
+        } catch (error) {
+          toast.error('Failed to load job details');
+          navigate('/jobs');
         }
->>>>>>> 9e11769 (feat(contacts): add admin Contacts CRUD (backend Prisma model, REST endpoints, OpenAPI) and frontend Contacts table with View/Edit/Delete modals, sticky header, accessible actions; also add public job/app endpoints and application phone field)
-      } catch (error) {
-        toast.error('Failed to load job details');
-        navigate('/jobs');
-      }
-    };
+      };
 
-    fetchJob();
-    return () => controller.abort();
-  }, [jobId, navigate]);
+      fetchJob();
+      return () => controller.abort();
+    }, [jobId, navigate]);
 
   // Handler for the submit button, updated for new API structure
-  const onSubmit = async (data) => {
-    setIsSubmitting(true);
-    try {
-<<<<<<< HEAD
-      const formDataToSend = new FormData();
-
-      // Split name into firstName and lastName
-      const nameParts = data.name.trim().split(' ');
-      const firstName = nameParts[0] || '';
-      const lastName = nameParts.slice(1).join(' ') || firstName;
-
-      // Add job ID
-      formDataToSend.append('jobId', jobId);
-      formDataToSend.append('firstName', firstName);
-      formDataToSend.append('lastName', lastName);
-      formDataToSend.append('email', data.email);
-      formDataToSend.append('phone', data.phone);
-      formDataToSend.append('nationality', data.country);
-      formDataToSend.append('currentLocation[country]', data.country); // Assuming nationality and current country are the same for simplicity
-      formDataToSend.append('currentLocation[city]', 'Not specified'); // Default city, can be updated
-      formDataToSend.append('coverLetter', data.additionalInfo || '');
-
-      if (data.resume && data.resume.length > 0) {
-        formDataToSend.append('resume', data.resume[0]);
+    const onSubmit = async (data) => {
+      setIsSubmitting(true);
+      try {
+        const csrfRes = await fetch(`/api/auth/csrf`, { credentials: 'include' });
+        const { data: csrfData } = await csrfRes.json();
+        const res = await fetch(`/api/applications`, {
+          method: 'POST',
+          credentials: 'include',
+          headers: { 'Content-Type': 'application/json', [csrfData?.headerName || 'x-csrf-token']: csrfData?.csrfToken || '' },
+          body: JSON.stringify({
+            jobId,
+            candidateName: data.name,
+            candidateEmail: data.email,
+            candidatePhone: data.phone,
+            coverLetter: data.additionalInfo || ''
+          })
+        });
+        if (!res.ok) {
+          const err = await res.json().catch(() => ({}));
+          throw new Error(err?.error?.message || 'Submit failed');
+        }
+        setIsSubmitted(true);
+        toast.success('Application submitted successfully!');
+      } catch (error) {
+        toast.error(error.message || 'Failed to submit application. Please try again.');
+      } finally {
+        setIsSubmitting(false);
       }
-
-      const response = await fetch(`/api/jobs/${jobId}/apply`, {
-        method: 'POST',
-        body: formDataToSend
-      });
-
-      if (!response.ok) {
-        const err = await response.json().catch(() => ({}));
-        throw new Error(err.detail || 'Submit failed');
-=======
-      const res = await fetch(`/api/applications`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          jobId,
-          name: data.name,
-          email: data.email,
-          phone: data.phone,
-          coverLetter: data.additionalInfo || ''
-        })
-      });
-      if (!res.ok) {
-        const err = await res.json().catch(() => ({}));
-        throw new Error(err.message || 'Submit failed');
->>>>>>> 9e11769 (feat(contacts): add admin Contacts CRUD (backend Prisma model, REST endpoints, OpenAPI) and frontend Contacts table with View/Edit/Delete modals, sticky header, accessible actions; also add public job/app endpoints and application phone field)
-      }
-
-      setIsSubmitted(true);
-      toast.success('Application submitted successfully!');
-    } catch (error) {
-      toast.error(error.message || 'Failed to submit application. Please try again.');
-    } finally {
-      setIsSubmitting(false);
-    }
-  };
+    };
 
   if (!job) {
     return (
