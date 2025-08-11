@@ -60,13 +60,22 @@ echo "📦 Ensuring dependencies are installed..."
 
 # 5) Try to start Postgres (Docker) if available
 DB_READY=false
+DB_PORT=5432
+DB_URL="postgresql://postgres:postgres@localhost:5432/uddaan?schema=public"
 if command -v docker >/dev/null 2>&1 && docker info >/dev/null 2>&1; then
   echo "🐳 Starting Postgres via Docker Compose..."
-  docker compose -f "$ROOT_DIR/backend/docker-compose.yml" up -d db || true
-  # Wait for port to open
-  for i in {1..30}; do
-    (echo > /dev/tcp/127.0.0.1/5432) >/dev/null 2>&1 && { DB_READY=true; break; } || sleep 1
-  done
+  # If 5432 already busy, assume local Postgres; otherwise run Compose on 55432
+  if (echo > /dev/tcp/127.0.0.1/5432) >/dev/null 2>&1; then
+    DB_PORT=5432
+    DB_URL="postgresql://postgres:postgres@localhost:5432/uddaan?schema=public"
+    DB_READY=true
+  else
+    echo "🔁 Starting containerized Postgres on 55432..."
+    PG_HOST_PORT=55432 docker compose -f "$ROOT_DIR/backend/docker-compose.yml" up -d db || true
+    for i in {1..40}; do
+      (echo > /dev/tcp/127.0.0.1/55432) >/dev/null 2>&1 && { DB_PORT=55432; DB_URL="postgresql://postgres:postgres@localhost:55432/uddaan?schema=public"; DB_READY=true; break; } || sleep 1
+    done
+  fi
 else
   echo "⚠️  Docker is not running. Checking for local Postgres on 5432..."
   for i in {1..10}; do
@@ -76,10 +85,10 @@ fi
 
 if [[ "$DB_READY" == true ]]; then
   echo "🗄️  Database is reachable. Running Prisma steps..."
-  (cd "$ROOT_DIR/backend" && npx prisma generate >/dev/null 2>&1 || true)
+  (cd "$ROOT_DIR/backend" && DATABASE_URL="$DB_URL" npx prisma generate >/dev/null 2>&1 || true)
   # Try migrate + seed, but do not fail entire script if they error
-  (cd "$ROOT_DIR/backend" && npx prisma migrate dev --name init || true)
-  (cd "$ROOT_DIR/backend" && npm run seed || true)
+  (cd "$ROOT_DIR/backend" && DATABASE_URL="$DB_URL" npx prisma migrate dev --name init || true)
+  (cd "$ROOT_DIR/backend" && DATABASE_URL="$DB_URL" npm run seed || true)
 else
   echo "⚠️  Database not reachable on localhost:5432. Skipping migrate/seed."
   echo "   Start Docker (or local Postgres) and re-run if you need DB-backed APIs."
@@ -113,9 +122,9 @@ echo "🚀 Starting dev servers..."
 # Choose backend stack: js (Node/Mongoose server.js) or ts (TS/Prisma src/index.ts)
 BACK_STACK=${BACK_STACK:-ts}
 if [[ "$BACK_STACK" == "ts" ]]; then
-  BACK_CMD="cd '$ROOT_DIR/backend' && PORT=$BACKEND_PORT CORS_ORIGIN=http://localhost:$FRONTEND_PORT npm run dev"
+  BACK_CMD="cd '$ROOT_DIR/backend' && PORT=$BACKEND_PORT CORS_ORIGIN=http://localhost:$FRONTEND_PORT DATABASE_URL='$DB_URL' npm run dev"
 else
-  BACK_CMD="cd '$ROOT_DIR/backend' && PORT=$BACKEND_PORT CORS_ORIGIN=http://localhost:$FRONTEND_PORT npm run dev:js"
+  BACK_CMD="cd '$ROOT_DIR/backend' && PORT=$BACKEND_PORT CORS_ORIGIN=http://localhost:$FRONTEND_PORT DATABASE_URL='$DB_URL' npm run dev:js"
 fi
 FRONT_CMD="cd '$ROOT_DIR/frontend' && PORT=$FRONTEND_PORT npm start"
 

@@ -57,6 +57,10 @@ const JobFormModal = ({ isOpen, onClose, onSubmit, initialData, isEditing }) => 
 
   const handleChange = (e) => {
     const { name, value, type, checked } = e.target;
+    // prevent non-numeric in salary fields
+    if ((name === 'salaryMin' || name === 'salaryMax') && value !== '' && !/^\d+$/.test(value)) {
+      return;
+    }
     setFormData(prev => ({
       ...prev,
       [name]: type === 'checkbox' ? checked : value
@@ -89,12 +93,13 @@ const JobFormModal = ({ isOpen, onClose, onSubmit, initialData, isEditing }) => 
     
     if (!formData.title.trim()) newErrors.title = 'Title is required';
     if (!formData.company.trim()) newErrors.company = 'Company is required';
-    if (!formData.city.trim()) newErrors.city = 'City is required';
+    // City is optional
     if (!formData.description.trim()) newErrors.description = 'Description is required';
     if (!formData.contactEmail.trim()) newErrors.contactEmail = 'Contact email is required';
-    if (!formData.salaryMin || formData.salaryMin <= 0) newErrors.salaryMin = 'Valid minimum salary is required';
-    if (!formData.salaryMax || formData.salaryMax <= 0) newErrors.salaryMax = 'Valid maximum salary is required';
-    if (parseInt(formData.salaryMin) > parseInt(formData.salaryMax)) {
+    // Make salary optional; validate only if provided
+    if (formData.salaryMin && formData.salaryMin <= 0) newErrors.salaryMin = 'Minimum salary must be positive';
+    if (formData.salaryMax && formData.salaryMax <= 0) newErrors.salaryMax = 'Maximum salary must be positive';
+    if (formData.salaryMin && formData.salaryMax && parseInt(formData.salaryMin, 10) > parseInt(formData.salaryMax, 10)) {
       newErrors.salaryMax = 'Maximum salary must be greater than minimum salary';
     }
 
@@ -113,16 +118,21 @@ const JobFormModal = ({ isOpen, onClose, onSubmit, initialData, isEditing }) => 
     
     if (!validateForm()) return;
 
-    // Clean up form data
+    // Map to backend schema and sanitize
     const cleanedData = {
-      ...formData,
-      requirements: formData.requirements.filter(req => req.trim()),
-      benefits: formData.benefits.filter(benefit => benefit.trim()),
-      tags: formData.tags.filter(tag => tag.trim()),
-      salaryMin: parseInt(formData.salaryMin),
-      salaryMax: parseInt(formData.salaryMax),
-      applicationDeadline: formData.applicationDeadline ? new Date(formData.applicationDeadline) : null,
-      startDate: formData.startDate ? new Date(formData.startDate) : null
+      title: formData.title.trim(),
+      company: formData.company.trim(),
+      country: formData.country,
+      city: formData.city?.trim() || undefined,
+      jobType: formData.jobType,
+      salaryMin: formData.salaryMin ? parseInt(formData.salaryMin, 10) : undefined,
+      salaryMax: formData.salaryMax ? parseInt(formData.salaryMax, 10) : undefined,
+      description: formData.description.trim(),
+      requirements: formData.requirements.filter(r => r.trim()).join('\n'),
+      benefits: formData.benefits.filter(b => b.trim()).join('\n'),
+      contactEmail: formData.contactEmail.trim(),
+      status: formData.isActive ? 'open' : 'draft',
+      featured: !!formData.featured,
     };
 
     onSubmit(cleanedData);

@@ -18,6 +18,8 @@ import mediaRoutes from '../modules/media/routes';
 import settingRoutes from '../modules/settings/routes';
 import auditRoutes from '../modules/audit/routes';
 import contactRoutes from '../modules/contacts/routes';
+import { authRequired } from '../middleware/auth';
+import { requireRoles } from '../middleware/rbac';
 
 const router = Router();
 
@@ -53,6 +55,29 @@ router.post('/consultations', async (req, res) => {
   await prisma.auditLog.create({ data: { userId: null, action: 'create', model: 'Consultation', modelId: created.id, changesJson: JSON.stringify(body) } });
   emitEvent('consultation:created', { id: created.id, name: created.name, preferredDate: created.preferredDate, preferredTime: created.preferredTime });
   return res.status(201).json({ data: created });
+});
+
+// Admin dashboard summary
+router.get('/admin/dashboard', authRequired(true), requireRoles(['super-admin', 'hr-manager', 'support']), async (_req, res) => {
+  const [jobsTotal, jobsActive, appsTotal, appsNew, usersTotal, consTotal, consPending] = await Promise.all([
+    prisma.job.count(),
+    prisma.job.count({ where: { status: 'open' } }),
+    prisma.application.count(),
+    prisma.application.count({ where: { status: 'pending' } }),
+    prisma.user.count(),
+    prisma.consultation.count(),
+    prisma.consultation.count({ where: { status: 'pending' } }),
+  ]);
+
+  const data = {
+    stats: {
+      jobs: { total: jobsTotal, active: jobsActive },
+      applications: { total: appsTotal, new: appsNew },
+      users: { total: usersTotal },
+      consultations: { total: consTotal, pending: consPending },
+    },
+  };
+  return res.json({ data });
 });
 
 export default router;

@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useForm } from 'react-hook-form';
 import { toast } from 'react-hot-toast';
@@ -13,6 +13,18 @@ const AdminLogin = () => {
   const [isLoading, setIsLoading] = useState(false);
 
   const { register, handleSubmit, formState: { errors } } = useForm();
+  const [csrf, setCsrf] = useState({ headerName: 'x-csrf-token', csrfToken: '' });
+
+  useEffect(() => {
+    // fetch CSRF token cookie and header name
+    (async () => {
+      try {
+        const res = await fetch('/api/auth/csrf', { credentials: 'include' });
+        const { data } = await res.json();
+        if (data?.csrfToken) setCsrf({ headerName: data.headerName || 'x-csrf-token', csrfToken: data.csrfToken });
+      } catch {}
+    })();
+  }, []);
 
   const handleSecuritySubmit = (e) => {
     e.preventDefault();
@@ -26,6 +38,7 @@ const AdminLogin = () => {
     }
   };
 
+  const [pendingMfa, setPendingMfa] = useState(false);
   const onSubmit = async (data) => {
     if (!isAuthenticated) {
       setShowSecurityModal(true);
@@ -34,19 +47,45 @@ const AdminLogin = () => {
 
     setIsLoading(true);
     try {
-      // Simulate API call
-      await new Promise(resolve => setTimeout(resolve, 600));
-      
-      if (data.username === 'admin' && (data.password === 'uddaan123' || data.password === 'admin')) {
-        localStorage.setItem('adminToken', 'sample-token');
-        localStorage.setItem('adminAuthAt', String(Date.now()));
-        toast.success('Login successful!');
-        navigate('/admin/dashboard');
+      const res = await fetch('/api/auth/login', {
+        method: 'POST',
+        credentials: 'include',
+        headers: { 'Content-Type': 'application/json', [csrf.headerName]: csrf.csrfToken },
+        body: JSON.stringify({ email: data.username, password: data.password })
+      });
+      if (!res.ok) throw new Error('Invalid credentials');
+      const payload = await res.json();
+      if (payload?.mfaRequired) {
+        setPendingMfa(true);
+        toast('Enter your 2FA code to continue');
       } else {
-        toast.error('Invalid credentials');
+        localStorage.setItem('adminAuthAt', String(Date.now()));
+        navigate('/admin/dashboard');
       }
     } catch (error) {
-      toast.error('Login failed. Please try again.');
+      toast.error(error.message || 'Login failed. Please try again.');
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const [mfaCode, setMfaCode] = useState('');
+  const submitMfa = async (e) => {
+    e.preventDefault();
+    setIsLoading(true);
+    try {
+      const res = await fetch('/api/auth/verify-2fa', {
+        method: 'POST',
+        credentials: 'include',
+        headers: { 'Content-Type': 'application/json', [csrf.headerName]: csrf.csrfToken },
+        body: JSON.stringify({ code: mfaCode })
+      });
+      if (!res.ok) throw new Error('Invalid 2FA code');
+      localStorage.setItem('adminAuthAt', String(Date.now()));
+      toast.success('Login successful!');
+      navigate('/admin/dashboard');
+    } catch (error) {
+      toast.error(error.message || '2FA failed');
     } finally {
       setIsLoading(false);
     }
@@ -203,6 +242,28 @@ const AdminLogin = () => {
                 <strong>Note:</strong> This is a demo. Use security code: <code className="bg-red-100 px-2 py-1 rounded">uddaan-secure-2024</code>
               </p>
             </div>
+          </div>
+        </div>
+      )}
+
+      {/* MFA Modal */}
+      {pendingMfa && (
+        <div className="modal-premium">
+          <div className="modal-content-premium">
+            <div className="text-center mb-6">
+              <div className="w-16 h-16 bg-gradient-to-br from-blue-600 to-purple-600 rounded-2xl flex items-center justify-center mx-auto mb-4">
+                <Key className="w-8 h-8 text-white" />
+              </div>
+              <h2 className="text-2xl font-bold text-gray-800 mb-2">Two-Factor Authentication</h2>
+              <p className="text-gray-600">Enter your 6-digit code from the authenticator app</p>
+            </div>
+            <form onSubmit={submitMfa} className="space-y-4">
+              <input type="text" value={mfaCode} onChange={(e) => setMfaCode(e.target.value)} className="form-input-premium" placeholder="123456" maxLength={6} />
+              <div className="flex gap-3 justify-end">
+                <button type="button" onClick={() => setPendingMfa(false)} className="px-4 py-2 rounded-md border border-gray-300 hover:bg-gray-50">Cancel</button>
+                <button type="submit" className="px-4 py-2 rounded-md bg-blue-600 text-white hover:bg-blue-700">Verify</button>
+              </div>
+            </form>
           </div>
         </div>
       )}

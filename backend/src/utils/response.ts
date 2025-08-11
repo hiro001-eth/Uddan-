@@ -15,3 +15,11 @@ export function sendNoContent(res: Response) {
 export function sendError(res: Response, code: string, message: string, status = 400, details?: unknown) {
   return res.status(status).json({ error: { code, message, details } });
 }
+
+export function sendAuthRequired(res: Response) {
+  return sendError(res, 'UNAUTHORIZED', 'Not authenticated', 401);
+}
+
+export function sendForbidden(res: Response) {
+  return sendError(res, 'FORBIDDEN', 'Insufficient permissions', 403);
+}

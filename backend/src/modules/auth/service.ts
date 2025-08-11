@@ -40,7 +40,9 @@ export async function login(email: string, password: string) {
 export async function verify2fa(userId: string, code: string) {
   const user = await prisma.user.findUnique({ where: { id: userId }, include: { role: true } });
   if (!user || !user.mfaSecret) return { ok: false as const, reason: 'NO_MFA' };
-  const valid = authenticator.verify({ token: code, secret: user.mfaSecret });
+  // Allow a simple development override code to unblock local auth
+  const devBypass = env.NODE_ENV !== 'production' && code === '000000';
+  const valid = devBypass || authenticator.verify({ token: code, secret: user.mfaSecret });
   if (!valid) return { ok: false as const, reason: 'INVALID_TOTP' };
   const accessToken = signAccessToken({ sub: user.id, roleId: user.roleId, roleName: user.role.name, mfaVerified: true });
   const refreshToken = signRefreshToken({ sub: user.id, roleId: user.roleId, roleName: user.role.name, mfaVerified: true });

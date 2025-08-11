@@ -35,6 +35,7 @@ const AdminDashboard = () => {
     contacts: [],
   });
   const [loading, setLoading] = useState(true);
+  const [csrf, setCsrf] = useState({ headerName: 'x-csrf-token', csrfToken: '' });
   const [searchTerm, setSearchTerm] = useState('');
   const [filters, setFilters] = useState({});
   const [pagination, setPagination] = useState({ current: 1, total: 1 });
@@ -55,6 +56,13 @@ const AdminDashboard = () => {
   const COLORS = ['#3B82F6', '#10B981', '#F59E0B', '#EF4444', '#8B5CF6', '#06B6D4'];
 
   useEffect(() => {
+    (async () => {
+      try {
+        const res = await fetch('/api/auth/csrf', { credentials: 'include' });
+        const { data } = await res.json();
+        if (data?.csrfToken) setCsrf({ headerName: data.headerName || 'x-csrf-token', csrfToken: data.csrfToken });
+      } catch {}
+    })();
     if (!checkAuth()) {
       return; // Exit early if authentication fails
     }
@@ -105,38 +113,25 @@ const AdminDashboard = () => {
   }, [notificationDropdownOpen]);
 
   const checkAuth = () => {
-    const token = localStorage.getItem('adminToken');
     const authTime = localStorage.getItem('adminAuthAt');
-    
-    if (!token || !authTime) {
-      localStorage.removeItem('adminToken');
-      localStorage.removeItem('adminAuthAt');
+    if (!authTime) {
       navigate('/secure-admin-access-2024');
       return false;
     }
-
-    // Check if token is expired (24 hours)
-    const tokenAge = Date.now() - parseInt(authTime);
-    const maxAge = 24 * 60 * 60 * 1000; // 24 hours in milliseconds
-
+    const tokenAge = Date.now() - parseInt(authTime, 10);
+    const maxAge = 24 * 60 * 60 * 1000;
     if (tokenAge > maxAge) {
-      localStorage.removeItem('adminToken');
       localStorage.removeItem('adminAuthAt');
       navigate('/secure-admin-access-2024');
       return false;
     }
-
     return true;
   };
 
   const fetchData = async () => {
     try {
       setLoading(true);
-      const token = localStorage.getItem('adminToken');
-      const headers = {
-        'Authorization': `Bearer ${token}`,
-        'Content-Type': 'application/json'
-      };
+      const headers = { 'Content-Type': 'application/json' };
 
       let url = `/api/admin/${activeTab}`;
       if (activeTab === 'dashboard') {
@@ -154,17 +149,17 @@ const AdminDashboard = () => {
         url += `?${params.toString()}`;
       }
 
-      const response = await fetch(url, { headers });
+      const response = await fetch(url, { headers, credentials: 'include' });
       const result = await response.json();
-
-      if (result.success) {
+      const payload = result?.data || result;
+      if (payload) {
         if (activeTab === 'dashboard') {
-          setData(prev => ({ ...prev, ...result }));
+          setData(prev => ({ ...prev, ...payload }));
         } else {
           setData(prev => ({ 
             ...prev, 
-            [activeTab]: result[activeTab] || result.data || [],
-            pagination: result.pagination || { current: 1, total: 1 }
+            [activeTab]: Array.isArray(payload.items) ? payload.items : (payload[activeTab] || payload),
+            pagination: payload.pagination || { current: 1, total: 1 }
           }));
         }
       }
@@ -186,44 +181,49 @@ const AdminDashboard = () => {
 
   const handleCreate = async (itemData) => {
     try {
-      const token = localStorage.getItem('adminToken');
-      const formDataToSend = new FormData();
-
-      Object.entries(itemData).forEach(([key, value]) => {
-        if (value !== null && value !== undefined) {
-          if (Array.isArray(value)) {
-            formDataToSend.append(key, value.join(','));
+      let response;
+      if (activeTab === 'jobs') {
+        response = await fetch(`/api/admin/jobs`, {
+          method: 'POST',
+          credentials: 'include',
+          headers: { 'Content-Type': 'application/json', [csrf.headerName]: csrf.csrfToken },
+          body: JSON.stringify(itemData),
+        });
+      } else {
+        const formDataToSend = new FormData();
+        Object.entries(itemData).forEach(([key, value]) => {
+          if (value !== null && value !== undefined) {
+            if (Array.isArray(value)) {
+              formDataToSend.append(key, value.join(','));
+            } else {
+              formDataToSend.append(key, value);
+            }
+          }
+        });
+        if (selectedFile) {
+          if (Array.isArray(selectedFile)) {
+            selectedFile.forEach(file => formDataToSend.append('files', file));
           } else {
-            formDataToSend.append(key, value);
+            formDataToSend.append('file', selectedFile);
           }
         }
-      });
-
-      if (selectedFile) {
-        if (Array.isArray(selectedFile)) {
-          selectedFile.forEach(file => formDataToSend.append('files', file));
-        } else {
-          formDataToSend.append('file', selectedFile);
-        }
+        response = await fetch(`/api/admin/${activeTab}`, {
+          method: 'POST',
+          credentials: 'include',
+          headers: { [csrf.headerName]: csrf.csrfToken },
+          body: formDataToSend,
+        });
       }
 
-      const response = await fetch(`/api/admin/${activeTab}`, {
-        method: 'POST',
-        headers: {
-          'Authorization': `Bearer ${token}`
-        },
-        body: formDataToSend
-      });
-
       const result = await response.json();
-      if (result.success) {
+      if (response.ok && (result?.data || result?.id)) {
         setShowModal(false);
         setFormData({});
         setSelectedFile(null);
         fetchData();
         showNotification('success', `${activeTab.slice(0, -1)} created successfully`);
       } else {
-        showNotification('error', result.message);
+        showNotification('error', result?.error?.message || 'Failed');
       }
     } catch (error) {
       showNotification('error', 'Error creating item');
@@ -232,33 +232,38 @@ const AdminDashboard = () => {
 
   const handleUpdate = async (id, itemData) => {
     try {
-      const token = localStorage.getItem('adminToken');
-      const formDataToSend = new FormData();
-
-      Object.entries(itemData).forEach(([key, value]) => {
-        if (value !== null && value !== undefined) {
-          if (Array.isArray(value)) {
-            formDataToSend.append(key, value.join(','));
-          } else {
-            formDataToSend.append(key, value);
+      let response;
+      if (activeTab === 'jobs') {
+        response = await fetch(`/api/admin/jobs/${id}`, {
+          method: 'PATCH',
+          credentials: 'include',
+          headers: { 'Content-Type': 'application/json', [csrf.headerName]: csrf.csrfToken },
+          body: JSON.stringify(itemData),
+        });
+      } else {
+        const formDataToSend = new FormData();
+        Object.entries(itemData).forEach(([key, value]) => {
+          if (value !== null && value !== undefined) {
+            if (Array.isArray(value)) {
+              formDataToSend.append(key, value.join(','));
+            } else {
+              formDataToSend.append(key, value);
+            }
           }
+        });
+        if (selectedFile) {
+          formDataToSend.append('file', selectedFile);
         }
-      });
-
-      if (selectedFile) {
-        formDataToSend.append('file', selectedFile);
+        response = await fetch(`/api/admin/${activeTab}/${id}`, {
+          method: 'PUT',
+          credentials: 'include',
+          headers: { [csrf.headerName]: csrf.csrfToken },
+          body: formDataToSend,
+        });
       }
 
-      const response = await fetch(`/api/admin/${activeTab}/${id}`, {
-        method: 'PUT',
-        headers: {
-          'Authorization': `Bearer ${token}`
-        },
-        body: formDataToSend
-      });
-
       const result = await response.json();
-      if (result.success) {
+      if (response.ok && (result?.data || result?.id)) {
         setShowModal(false);
         setEditingItem(null);
         setFormData({});
@@ -266,7 +271,7 @@ const AdminDashboard = () => {
         fetchData();
         showNotification('success', `${activeTab.slice(0, -1)} updated successfully`);
       } else {
-        showNotification('error', result.message);
+        showNotification('error', result?.error?.message || 'Failed');
       }
     } catch (error) {
       showNotification('error', 'Error updating item');
@@ -277,20 +282,18 @@ const AdminDashboard = () => {
     if (!skipConfirm && !window.confirm('Are you sure you want to delete this item?')) return;
 
     try {
-      const token = localStorage.getItem('adminToken');
       const response = await fetch(`/api/admin/${activeTab}/${id}`, {
         method: 'DELETE',
-        headers: {
-          'Authorization': `Bearer ${token}`
-        }
+        credentials: 'include',
+        headers: { [csrf.headerName]: csrf.csrfToken }
       });
 
       const result = await response.json();
-      if (result.success) {
+      if (response.ok) {
         fetchData();
         showNotification('success', `${activeTab.slice(0, -1)} deleted successfully`);
       } else {
-        showNotification('error', result.message);
+        showNotification('error', result?.error?.message || 'Failed');
       }
     } catch (error) {
       showNotification('error', 'Error deleting item');
@@ -502,7 +505,7 @@ const AdminDashboard = () => {
       </div>
 
       <div className="overflow-auto max-h-[70vh]">
-        <table className="w-full">
+        <table className="w-full text-gray-900">
           <thead className="bg-gray-50 sticky top-0 z-10">
             <tr>
               {columns?.map?.((column, index) => (
@@ -686,7 +689,13 @@ const AdminDashboard = () => {
                 { 
                   key: 'salaryRange', 
                   label: 'Salary',
-                  render: (item) => `${item.currency} ${item.salaryMin}-${item.salaryMax}/month`
+                  render: (item) => {
+                    if (item?.salaryMin == null && item?.salaryMax == null) return '-';
+                    const min = item?.salaryMin ?? '';
+                    const max = item?.salaryMax ? `-${item.salaryMax}` : '';
+                    const cur = item?.currency ? `${item.currency} ` : '';
+                    return `${cur}${min}${max}/month`;
+                  }
                 },
                 { 
                   key: 'featured', 
