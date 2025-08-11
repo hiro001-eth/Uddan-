@@ -1,6 +1,6 @@
 import prisma from '../../prisma';
 import { comparePassword, hashPassword } from '../../utils/password';
-import { signAccessToken, signRefreshToken } from '../../utils/jwt';
+import { signAccessToken, signRefreshToken, verifyRefreshToken } from '../../utils/jwt';
 import { authenticator } from 'otplib';
 import crypto from 'crypto';
 import { env } from '../../config/env';
@@ -71,4 +71,62 @@ export async function confirmPasswordReset(token: string, newPassword: string) {
     prisma.resetToken.update({ where: { id: rec.id }, data: { usedAt: new Date() } }),
   ]);
   return true;
+}
+
+// Express handlers kept here to avoid a new controller file for two endpoints
+import type { Request, Response } from 'express';
+import { z } from 'zod';
+
+export async function postRefresh(req: Request, res: Response) {
+  const rt = req.cookies['refreshToken'];
+  if (!rt) return res.status(401).json({ error: { code: 'UNAUTHORIZED', message: 'No refresh token' } });
+  try {
+    const payload = verifyRefreshToken(rt);
+    const accessToken = signAccessToken({ sub: String(payload.sub), roleId: String(payload.roleId), roleName: payload.roleName, mfaVerified: true });
+    res.cookie('accessToken', accessToken, {
+      httpOnly: true,
+      secure: env.COOKIE_SECURE,
+      domain: env.COOKIE_DOMAIN,
+      sameSite: env.COOKIE_SAME_SITE,
+      path: '/',
+      maxAge: env.JWT_ACCESS_TTL_SECONDS * 1000,
+    });
+    return res.json({ ok: true });
+  } catch {
+    return res.status(401).json({ error: { code: 'UNAUTHORIZED', message: 'Invalid refresh token' } });
+  }
+}
+
+const RegisterSchema = z.object({
+  name: z.string().min(1),
+  email: z.string().email(),
+  password: z.string().min(8),
+  roleId: z.string().uuid(),
+  phone: z.string().optional(),
+  isActive: z.boolean().optional(),
+});
+
+export async function postRegisterStaff(req: Request, res: Response) {
+  try {
+    const body = RegisterSchema.parse(req.body);
+    const actor = (req as any).user?.sub as string;
+    const passwordHash = await hashPassword(body.password);
+    const created = await prisma.$transaction(async (tx) => {
+      const user = await tx.user.create({
+        data: {
+          name: body.name,
+          email: body.email,
+          passwordHash,
+          roleId: body.roleId,
+          phone: body.phone,
+          isActive: body.isActive ?? true,
+        },
+      });
+      await tx.auditLog.create({ data: { userId: actor, action: 'create', model: 'User', modelId: user.id, changesJson: JSON.stringify({ name: user.name, email: user.email, roleId: user.roleId }) } });
+      return user;
+    });
+    return res.status(201).json({ data: created });
+  } catch (e: any) {
+    return res.status(400).json({ error: { code: 'BAD_REQUEST', message: e?.message || 'Invalid data' } });
+  }
 }

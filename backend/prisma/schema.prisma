@@ -138,13 +138,20 @@ model Event {
 
 model Consultation {
   id         String   @id @default(uuid())
-  bookingId  String?
-  userId     String?
-  user       User?    @relation(fields: [userId], references: [id])
-  date       DateTime
-  status     String
-  adminNotes String?
-  reminders  String?  // JSON string of reminders
+  bookingId      String?
+  userId         String?
+  user           User?    @relation(fields: [userId], references: [id])
+  // Public booking details
+  name           String
+  email          String
+  phone          String
+  preferredDate  DateTime
+  preferredTime  String
+  // Admin scheduling/status
+  date           DateTime @default(now())
+  status         String
+  adminNotes     String?
+  reminders      String?  // JSON string of reminders
 }
 
 model Media {

@@ -1,4 +1,5 @@
 import prisma from '../../prisma';
+import { emitEvent } from '../../services/realtime';
 
 export async function createConsultationWithAudit(data: any, actorId: string) {
   const item = await prisma.$transaction(async (tx) => {
@@ -6,6 +7,7 @@ export async function createConsultationWithAudit(data: any, actorId: string) {
     await tx.auditLog.create({ data: { userId: actorId, action: 'create', model: 'Consultation', modelId: created.id, changesJson: JSON.stringify(data) } });
     return created;
   });
+  emitEvent('consultation:created', { id: item.id, status: item.status });
   return item;
 }
 

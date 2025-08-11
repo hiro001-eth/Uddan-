@@ -3,8 +3,15 @@ import { z } from 'zod';
 export const ConsultationCreateSchema = z.object({
   bookingId: z.string().optional(),
   userId: z.string().uuid().optional(),
-  date: z.string().datetime(),
-  status: z.string().min(1),
+  // public fields
+  name: z.string().min(1),
+  email: z.string().email(),
+  phone: z.string().min(5).max(20),
+  preferredDate: z.string().datetime(),
+  preferredTime: z.string().min(1),
+  // admin fields
+  date: z.string().datetime().optional(),
+  status: z.string().min(1).default('pending'),
   adminNotes: z.string().optional(),
   reminders: z.string().optional(),
 });

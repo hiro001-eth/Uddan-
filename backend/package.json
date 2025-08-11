@@ -36,6 +36,7 @@
     "pino": "^9.4.0",
     "pino-http": "^9.0.0",
     "pino-pretty": "^11.2.2",
+    "socket.io": "^4.8.1",
     "swagger-ui-express": "^5.0.1",
     "uuid": "^9.0.1",
     "yaml": "^2.5.0",
@@ -63,7 +64,9 @@
     "typescript": "^5.5.4"
   },
   "jest": {
-    "extensionsToTreatAsEsm": [".ts"],
+    "extensionsToTreatAsEsm": [
+      ".ts"
+    ],
     "globals": {
       "ts-jest": {
         "useESM": true

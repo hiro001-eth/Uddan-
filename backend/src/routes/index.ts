@@ -1,5 +1,9 @@
 import { Router } from 'express';
 import { optionalAuth } from '../middleware/auth';
+import { ContactCreateSchema } from '../modules/contacts/schemas';
+import { ConsultationCreateSchema } from '../modules/consultations/schemas';
+import prisma from '../prisma';
+import { emitEvent } from '../services/realtime';
 import { getJobs, getJobById } from '../modules/jobs/controller';
 import { postApplication } from '../modules/applications/controller';
 import authRoutes from '../modules/auth/routes';
@@ -34,5 +38,21 @@ router.use('/admin/contacts', contactRoutes);
 router.get('/jobs', optionalAuth, getJobs);
 router.get('/jobs/:id', optionalAuth, getJobById);
 router.post('/applications', postApplication);
+
+// Public submissions
+router.post('/contacts', async (req, res) => {
+  const body = ContactCreateSchema.parse(req.body);
+  const created = await prisma.contact.create({ data: body });
+  await prisma.auditLog.create({ data: { userId: null, action: 'create', model: 'Contact', modelId: created.id, changesJson: JSON.stringify(body) } });
+  return res.status(201).json({ data: created });
+});
+
+router.post('/consultations', async (req, res) => {
+  const body = ConsultationCreateSchema.parse(req.body);
+  const created = await prisma.consultation.create({ data: body });
+  await prisma.auditLog.create({ data: { userId: null, action: 'create', model: 'Consultation', modelId: created.id, changesJson: JSON.stringify(body) } });
+  emitEvent('consultation:created', { id: created.id, name: created.name, preferredDate: created.preferredDate, preferredTime: created.preferredTime });
+  return res.status(201).json({ data: created });
+});
 
 export default router;

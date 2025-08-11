@@ -2,6 +2,7 @@ import { createServer } from 'http';
 import { createApp } from './config/express';
 import { env } from './config/env';
 import prisma from './prisma';
+import { initRealtime } from './services/realtime';
 
 async function main() {
   // Validate DB connection early
@@ -9,6 +10,7 @@ async function main() {
 
   const app = createApp();
   const server = createServer(app);
+  initRealtime(server);
 
   server.listen(env.PORT, () => {
     // eslint-disable-next-line no-console

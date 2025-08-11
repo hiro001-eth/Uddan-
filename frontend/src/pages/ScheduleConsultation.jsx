@@ -14,7 +14,25 @@ const ScheduleConsultation = () => {
   const onSubmit = async (data) => {
     setIsSubmitting(true);
     try {
-      await new Promise(r => setTimeout(r, 1500));
+      const csrfRes = await fetch(`/api/auth/csrf`, { credentials: 'include' });
+      const { data: csrfData } = await csrfRes.json();
+      const res = await fetch(`/api/consultations`, {
+        method: 'POST',
+        credentials: 'include',
+        headers: {
+          'Content-Type': 'application/json',
+          [csrfData?.headerName || 'x-csrf-token']: csrfData?.csrfToken || ''
+        },
+        body: JSON.stringify({
+          name: data.name,
+          email: data.email,
+          phone: data.phone,
+          preferredDate: new Date(data.date).toISOString(),
+          preferredTime: data.time,
+          status: 'pending'
+        })
+      });
+      if (!res.ok) throw new Error('Failed to book');
       toast.success('Consultation booked! We will confirm via email.');
       reset();
     } catch {

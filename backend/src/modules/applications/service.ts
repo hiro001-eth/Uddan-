@@ -1,4 +1,5 @@
 import prisma from '../../prisma';
+import { emitEvent } from '../../services/realtime';
 
 export async function createApplicationWithAudit(data: any, actorId?: string) {
   const app = await prisma.$transaction(async (tx) => {
@@ -6,6 +7,7 @@ export async function createApplicationWithAudit(data: any, actorId?: string) {
     await tx.auditLog.create({ data: { userId: actorId || null, action: 'create', model: 'Application', modelId: created.id, changesJson: JSON.stringify(data) } });
     return created;
   });
+  emitEvent('application:created', { id: app.id, candidateName: app.candidateName, jobId: app.jobId, appliedAt: app.appliedAt });
   return app;
 }
 

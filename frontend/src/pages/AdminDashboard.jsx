@@ -62,6 +62,27 @@ const AdminDashboard = () => {
     fetchNotifications();
   }, [activeTab, pagination.current, searchTerm, filters]);
 
+  // Realtime: listen for application/consultation created
+  useEffect(() => {
+    let socket;
+    try {
+      // lazy import to avoid breaking SSR
+      // eslint-disable-next-line @typescript-eslint/no-var-requires
+      const { io } = require('socket.io-client');
+      socket = io(process.env.REACT_APP_WS_URL || 'http://localhost:5000', { withCredentials: true });
+      socket.on('application:created', (p) => {
+        setNotifications((prev) => [{ id: Date.now(), type: 'success', message: `New application: ${p?.candidateName || ''}`, timestamp: new Date() }, ...prev.slice(0, 9)]);
+        if (activeTab === 'applications') fetchData();
+      });
+      socket.on('consultation:created', (p) => {
+        setNotifications((prev) => [{ id: Date.now(), type: 'info', message: `New consultation booked`, timestamp: new Date() }, ...prev.slice(0, 9)]);
+        if (activeTab === 'consultations') fetchData();
+      });
+    } catch {}
+    return () => { try { socket && socket.disconnect(); } catch {} };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
   // Initial authentication check on component mount
   useEffect(() => {
     if (!checkAuth()) {
