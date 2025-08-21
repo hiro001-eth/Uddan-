@@ -21,12 +21,16 @@ args = "cd backend && npm install"
 
 [[workflows.workflow.tasks]]
 task = "shell.exec"
-args = "cd ../frontend && npm install"
+args = "cd frontend && npm install"
 
 [[workflows.workflow.tasks]]
 task = "shell.exec"
-args = "cd ../backend && npm run dev &"
+args = "cd backend && npm run dev &"
 
 [[workflows.workflow.tasks]]
 task = "shell.exec"
-args = "cd ../frontend && npm start"
+args = "cd frontend && npm start"
+
+[[ports]]
+localPort = 3000
+externalPort = 80

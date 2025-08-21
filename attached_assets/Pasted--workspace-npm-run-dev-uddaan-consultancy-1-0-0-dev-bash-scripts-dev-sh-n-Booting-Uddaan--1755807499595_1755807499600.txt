@@ -1,0 +1,156 @@
+~/workspace$ npm run dev
+
+> uddaan-consultancy@1.0.0 dev
+> bash scripts/dev.sh
+
+\n🚀 Booting Uddaan (DB → Backend → Frontend)
+🧹 Cleaning up old dev processes (if any)...
+📦 Ensuring dependencies are installed...
+⚠️  Docker is not running. Checking for local Postgres on 5432...
+⚠️  Database not reachable on localhost:5432. Skipping migrate/seed.
+   Start Docker (or local Postgres) and re-run if you need DB-backed APIs.
+🌐 Frontend will run on http://localhost:3000
+🔧 Backend will run on http://localhost:5000
+🚀 Starting dev servers...
+Need to install the following packages:
+concurrently@9.2.0
+Ok to proceed? (y) y
+
+[BACKEND] 
+[BACKEND] > uddaan-backend@1.0.0 dev
+[BACKEND] > tsx watch src/index.ts
+[BACKEND] 
+[FRONTEND] 
+[FRONTEND] > uddaan-consultancy-frontend@1.0.0 start
+[FRONTEND] > react-scripts start
+[FRONTEND] 
+[FRONTEND] Browserslist: browsers data (caniuse-lite) is 8 months old. Please run:
+[FRONTEND]   npx update-browserslist-db@latest
+[FRONTEND]   Why you should do it regularly: https://github.com/browserslist/update-db#readme
+[BACKEND] PrismaClientInitializationError: Can't reach database server at `localhost:5432`
+[BACKEND] 
+[BACKEND] Please make sure your database server is running at `localhost:5432`.
+[BACKEND]     at t (/home/runner/workspace/backend/node_modules/@prisma/client/runtime/library.js:112:2488)
+[BACKEND]     at async main (/home/runner/workspace/backend/src/index.ts:9:3) {
+[BACKEND]   clientVersion: '5.22.0',
+[BACKEND]   errorCode: 'P1001'
+[BACKEND] }
+[FRONTEND] (node:1104) [DEP_WEBPACK_DEV_SERVER_ON_AFTER_SETUP_MIDDLEWARE] DeprecationWarning: 'onAfterSetupMiddleware' option is deprecated. Please use the 'setupMiddlewares' option.
+[FRONTEND] (Use `node --trace-deprecation ...` to show where the warning was created)
+[FRONTEND] (node:1104) [DEP_WEBPACK_DEV_SERVER_ON_BEFORE_SETUP_MIDDLEWARE] DeprecationWarning: 'onBeforeSetupMiddleware' option is deprecated. Please use the 'setupMiddlewares' option.
+[FRONTEND] Starting the development server...
+[FRONTEND] 
+[FRONTEND] Failed to compile.
+[FRONTEND] 
+[FRONTEND] Error: [BABEL] /home/runner/workspace/frontend/src/index.js: Cannot find module '@babel/plugin-proposal-private-property-in-object'
+[FRONTEND] Require stack:
+[FRONTEND] - /home/runner/workspace/frontend/node_modules/babel-preset-react-app/create.js
+[FRONTEND] - /home/runner/workspace/frontend/node_modules/babel-preset-react-app/index.js
+[FRONTEND] - /home/runner/workspace/frontend/node_modules/@babel/core/lib/config/files/module-types.js
+[FRONTEND] - /home/runner/workspace/frontend/node_modules/@babel/core/lib/config/files/configuration.js
+[FRONTEND] - /home/runner/workspace/frontend/node_modules/@babel/core/lib/config/files/index.js
+[FRONTEND] - /home/runner/workspace/frontend/node_modules/@babel/core/lib/index.js
+[FRONTEND] - /home/runner/workspace/frontend/node_modules/@rollup/plugin-babel/dist/index.js
+[FRONTEND] - /home/runner/workspace/frontend/node_modules/workbox-build/build/lib/bundle.js
+[FRONTEND] - /home/runner/workspace/frontend/node_modules/workbox-webpack-plugin/build/generate-sw.js
+[FRONTEND] - /home/runner/workspace/frontend/node_modules/workbox-webpack-plugin/build/index.js
+[FRONTEND] - /home/runner/workspace/frontend/node_modules/react-scripts/config/webpack.config.js
+[FRONTEND] - /home/runner/workspace/frontend/node_modules/react-scripts/scripts/start.js (While processing: "/home/runner/workspace/frontend/node_modules/babel-preset-react-app/index.js")
+[FRONTEND]     at Generator.next (<anonymous>)
+[FRONTEND]     at Generator.next (<anonymous>)
+[FRONTEND]     at Generator.next (<anonymous>)
+[FRONTEND]     at Generator.next (<anonymous>)
+[FRONTEND]     at cachedFunction.next (<anonymous>)
+[FRONTEND]     at loadPresetDescriptor.next (<anonymous>)
+[FRONTEND]     at recursePresetDescriptors.next (<anonymous>)
+[FRONTEND]     at Generator.next (<anonymous>)
+[FRONTEND]     at loadFullConfig.next (<anonymous>)
+[FRONTEND]     at transform.next (<anonymous>)
+[FRONTEND]     at new Promise (<anonymous>)
+[FRONTEND]     at Generator.next (<anonymous>)
+[FRONTEND]     at new Promise (<anonymous>)
+[FRONTEND] ERROR in ./src/index.js
+[FRONTEND] Module build failed (from ./node_modules/babel-loader/lib/index.js):
+[FRONTEND] Error: [BABEL] /home/runner/workspace/frontend/src/index.js: Cannot find module '@babel/plugin-proposal-private-property-in-object'
+[FRONTEND] Require stack:
+[FRONTEND] - /home/runner/workspace/frontend/node_modules/babel-preset-react-app/create.js
+[FRONTEND] - /home/runner/workspace/frontend/node_modules/babel-preset-react-app/index.js
+[FRONTEND] - /home/runner/workspace/frontend/node_modules/@babel/core/lib/config/files/module-types.js
+[FRONTEND] - /home/runner/workspace/frontend/node_modules/@babel/core/lib/config/files/configuration.js
+[FRONTEND] - /home/runner/workspace/frontend/node_modules/@babel/core/lib/config/files/index.js
+[FRONTEND] - /home/runner/workspace/frontend/node_modules/@babel/core/lib/index.js
+[FRONTEND] - /home/runner/workspace/frontend/node_modules/@rollup/plugin-babel/dist/index.js
+[FRONTEND] - /home/runner/workspace/frontend/node_modules/workbox-build/build/lib/bundle.js
+[FRONTEND] - /home/runner/workspace/frontend/node_modules/workbox-webpack-plugin/build/generate-sw.js
+[FRONTEND] - /home/runner/workspace/frontend/node_modules/workbox-webpack-plugin/build/index.js
+[FRONTEND] - /home/runner/workspace/frontend/node_modules/react-scripts/config/webpack.config.js
+[FRONTEND] - /home/runner/workspace/frontend/node_modules/react-scripts/scripts/start.js (While processing: "/home/runner/workspace/frontend/node_modules/babel-preset-react-app/index.js")
+[FRONTEND]     at Module._resolveFilename (node:internal/modules/cjs/loader:1212:15)
+[FRONTEND]     at Module._load (node:internal/modules/cjs/loader:1043:27)
+[FRONTEND]     at Module.require (node:internal/modules/cjs/loader:1298:19)
+[FRONTEND]     at require (node:internal/modules/helpers:182:18)
+[FRONTEND]     at module.exports (/home/runner/workspace/frontend/node_modules/babel-preset-react-app/create.js:168:9)
+[FRONTEND]     at module.exports (/home/runner/workspace/frontend/node_modules/babel-preset-react-app/index.js:19:10)
+[FRONTEND]     at async (/home/runner/workspace/frontend/node_modules/@babel/core/lib/gensync-utils/async.js:35:33)
+[FRONTEND]     at async (/home/runner/workspace/frontend/node_modules/gensync/index.js:186:15)
+[FRONTEND]     at /home/runner/workspace/frontend/node_modules/gensync/index.js:216:13
+[FRONTEND]     at Generator.next (<anonymous>)
+[FRONTEND]     at /home/runner/workspace/frontend/node_modules/@babel/core/lib/config/full.js:180:21
+[FRONTEND]     at Generator.next (<anonymous>)
+[FRONTEND]     at Function.<anonymous> (/home/runner/workspace/frontend/node_modules/@babel/core/lib/gensync-utils/async.js:21:3)
+[FRONTEND]     at Generator.next (<anonymous>)
+[FRONTEND]     at step (/home/runner/workspace/frontend/node_modules/gensync/index.js:269:25)
+[FRONTEND]     at evaluateAsync (/home/runner/workspace/frontend/node_modules/gensync/index.js:291:5)
+[FRONTEND]     at Function.errback (/home/runner/workspace/frontend/node_modules/gensync/index.js:113:7)
+[FRONTEND]     at errback (/home/runner/workspace/frontend/node_modules/@babel/core/lib/gensync-utils/async.js:65:18)
+[FRONTEND]     at async (/home/runner/workspace/frontend/node_modules/gensync/index.js:188:17)
+[FRONTEND]     at onFirstPause (/home/runner/workspace/frontend/node_modules/gensync/index.js:216:13)
+[FRONTEND]     at Generator.next (<anonymous>)
+[FRONTEND]     at cachedFunction (/home/runner/workspace/frontend/node_modules/@babel/core/lib/config/caching.js:52:46)
+[FRONTEND]     at cachedFunction.next (<anonymous>)
+[FRONTEND]     at loadPresetDescriptor (/home/runner/workspace/frontend/node_modules/@babel/core/lib/config/full.js:292:43)
+[FRONTEND]     at loadPresetDescriptor.next (<anonymous>)
+[FRONTEND]     at recursePresetDescriptors (/home/runner/workspace/frontend/node_modules/@babel/core/lib/config/full.js:77:31)
+[FRONTEND]     at recursePresetDescriptors.next (<anonymous>)
+[FRONTEND]     at /home/runner/workspace/frontend/node_modules/@babel/core/lib/config/full.js:156:21
+[FRONTEND]     at Generator.next (<anonymous>)
+[FRONTEND]     at loadFullConfig (/home/runner/workspace/frontend/node_modules/@babel/core/lib/config/full.js:113:5)
+[FRONTEND]     at loadFullConfig.next (<anonymous>)
+[FRONTEND]     at transform (/home/runner/workspace/frontend/node_modules/@babel/core/lib/transform.js:20:44)
+[FRONTEND]     at transform.next (<anonymous>)
+[FRONTEND]     at step (/home/runner/workspace/frontend/node_modules/gensync/index.js:269:25)
+[FRONTEND]     at evaluateAsync (/home/runner/workspace/frontend/node_modules/gensync/index.js:291:5)
+[FRONTEND]     at errback (/home/runner/workspace/frontend/node_modules/gensync/index.js:113:7)
+[FRONTEND]     at stopHiding - secret - don't use this - v1 (/home/runner/workspace/frontend/node_modules/@babel/core/lib/errors/rewrite-stack-trace.js:47:12)
+[FRONTEND]     at transform (/home/runner/workspace/frontend/node_modules/@babel/core/lib/transform.js:39:72)
+[FRONTEND]     at node:internal/util:441:7
+[FRONTEND]     at new Promise (<anonymous>)
+[FRONTEND]     at transform (node:internal/util:427:12)
+[FRONTEND]     at /home/runner/workspace/frontend/node_modules/babel-loader/lib/transform.js:15:22
+[FRONTEND]     at Generator.next (<anonymous>)
+[FRONTEND]     at asyncGeneratorStep (/home/runner/workspace/frontend/node_modules/babel-loader/lib/transform.js:3:103)
+[FRONTEND]     at _next (/home/runner/workspace/frontend/node_modules/babel-loader/lib/transform.js:4:194)
+[FRONTEND]     at /home/runner/workspace/frontend/node_modules/babel-loader/lib/transform.js:4:364
+[FRONTEND]     at new Promise (<anonymous>)
+[FRONTEND]     at /home/runner/workspace/frontend/node_modules/babel-loader/lib/transform.js:4:97
+[FRONTEND]     at /home/runner/workspace/frontend/node_modules/babel-loader/lib/transform.js:48:17
+[FRONTEND]     at /home/runner/workspace/frontend/node_modules/babel-loader/lib/cache.js:137:26
+[FRONTEND] 
+[FRONTEND] ERROR in [eslint] 
+[FRONTEND] src/index.js
+[FRONTEND]   Line 0:  Parsing error: [BABEL] /home/runner/workspace/frontend/src/index.js: Cannot find module '@babel/plugin-proposal-private-property-in-object'
+[FRONTEND] Require stack:
+[FRONTEND] - /home/runner/workspace/frontend/node_modules/babel-preset-react-app/create.js
+[FRONTEND] - /home/runner/workspace/frontend/node_modules/babel-preset-react-app/index.js
+[FRONTEND] - /home/runner/workspace/frontend/node_modules/@babel/core/lib/config/files/module-types.js
+[FRONTEND] - /home/runner/workspace/frontend/node_modules/@babel/core/lib/config/files/configuration.js
+[FRONTEND] - /home/runner/workspace/frontend/node_modules/@babel/core/lib/config/files/index.js
+[FRONTEND] - /home/runner/workspace/frontend/node_modules/@babel/core/lib/index.js
+[FRONTEND] - /home/runner/workspace/frontend/node_modules/@rollup/plugin-babel/dist/index.js
+[FRONTEND] - /home/runner/workspace/frontend/node_modules/workbox-build/build/lib/bundle.js
+[FRONTEND] - /home/runner/workspace/frontend/node_modules/workbox-webpack-plugin/build/generate-sw.js
+[FRONTEND] - /home/runner/workspace/frontend/node_modules/workbox-webpack-plugin/build/index.js
+[FRONTEND] - /home/runner/workspace/frontend/node_modules/react-scripts/config/webpack.config.js
+[FRONTEND] - /home/runner/workspace/frontend/node_modules/react-scripts/scripts/start.js (While processing: "/home/runner/workspace/frontend/node_modules/babel-preset-react-app/prod.js")
+[FRONTEND] 
+[FRONTEND] webpack compiled with 2 errors
