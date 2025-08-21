@@ -25,4 +25,8 @@ args = "cd ../frontend && npm install"
 
 [[workflows.workflow.tasks]]
 task = "shell.exec"
-args = "cd .. && npm run dev"
+args = "cd ../backend && npm run dev &"
+
+[[workflows.workflow.tasks]]
+task = "shell.exec"
+args = "cd ../frontend && npm start"
