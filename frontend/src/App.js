@@ -27,7 +27,6 @@ import CookiePolicy from './pages/CookiePolicy';
 import ScheduleConsultation from './pages/ScheduleConsultation';
 
 // New components
-import FloatingAirplane from './components/FloatingAirplane';
 import ChatAssistant from './components/ChatAssistant';
 
 function ScrollToTop() {
