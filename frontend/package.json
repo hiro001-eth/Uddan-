@@ -28,11 +28,11 @@
     "socket.io-client": "^4.7.5"
   },
   "scripts": {
-    "start": "HOST=0.0.0.0 react-scripts start",
+    "start": "HOST=0.0.0.0 DANGEROUSLY_DISABLE_HOST_CHECK=true react-scripts start",
     "build": "react-scripts build",
     "test": "react-scripts test",
     "eject": "react-scripts eject",
-    "dev": "HOST=0.0.0.0 PORT=3000 react-scripts start"
+    "dev": "HOST=0.0.0.0 PORT=3000 DANGEROUSLY_DISABLE_HOST_CHECK=true react-scripts start"
   },
   "proxy": "http://0.0.0.0:5000",
   "eslintConfig": {
