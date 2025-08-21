@@ -7,7 +7,7 @@
     "dev": "bash scripts/dev.sh",
     "setup": "bash scripts/setup.sh",
     "backend:dev": "cd backend && npm run dev",
-    "frontend:dev": "cd frontend && npm run dev", 
+    "frontend:dev": "cd frontend && npm run dev",
     "db:up": "docker compose -f backend/docker-compose.yml up -d db",
     "prisma:generate": "cd backend && npm run prisma:generate",
     "prisma:migrate": "cd backend && npm run prisma:migrate",
