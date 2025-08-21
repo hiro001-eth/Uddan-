@@ -165,7 +165,7 @@ model Media {
   storageBackend String
   uploadedBy     String?
   uploader       User?    @relation("UserMedia", fields: [uploadedBy], references: [id])
-  tags           String[]
+  tags           String?
   createdAt      DateTime @default(now())
 }
 
