@@ -1,0 +1,36 @@
+first of all look at the project deeply and follow my problem to troubleshoot it perfectly ...
+
+
+decription of my project : 
+			 My project name is Udaan Agencies  this is webapp application where i run these project on udaanagencies.com.np   and when my project run , then what happen is :
+			 user visted to my website then user can availble to see the job that are available over the gulf county for working and user find the suitable job on my website and apply on it my reading decription . 
+			 in decription is job name , details like county , salary , workin hour , how many user view the job profile and there is apply button and user click that button and apply on it , and form section popup there only and user fill that form , in that form there is full name , email , phone number and apply button and popup of successfull apply for jobs  and that form should be safely and successfully upload on admin pannel and databases . 
+			 
+			 and othere form too like secudular meeting , contact also into different particular represent table in admin pannel . 
+			 
+			 
+			 admin pannel is the most important things of my website so make it safe , secure and with  no bug no attacks can be done by hacker . implement the cryptography techninque on the data transfer on it 
+			and make it high class secure web application  there is 2fa i  have added on it .
+			
+			admin pannel is should contain all the features that modern technology features today world uses on admin pannel add all those features like accessing databases data through CRUD operation on it .. 
+			
+			
+			and databases should be best , secure implentatoion on it no any bug techinques can exact databases make it relational databases .
+			
+			
+			and in admin pannel when admin add the jobs then the job can able to see in frontend by user so these means the CRUD operation post and get etc different method should be use in form and table to making everythings works manunally . 
+			
+			ID , CLASS should be implentation on the software .
+			
+			
+			
+ and when user submit any types of form or details it should store in admin if job then it should be redirected that job form on application for easy to manage data , and in job section table should be there then admin can Do CRUD operation on it too . your are top level of AI you know much more perfectuly what are things can be done to make it perfectly in todays world .
+ 
+ 
+ on it frontend . 
+ 
+ frontend design should be too perfect animation on the airplane so that aboard it indicates make it moving with math , json , and some coding on it . when cursor moves downward then it show the perfect tranaction on model , object that present or you going to add on it . the theme should be matching with logo too see the logo and match the theme on it and make it best theme for my company . 
+ see the missing features like testionals , and all kind of features that need to be in my website for stand out among all the similar website in the internet . make it too perfect . beautifull animation , what my webapp look much better , simple , increase in user exprience add those . there is no login and create account option dont add it . and make missing page like 404 not found any misuse things is done then 404 should show , terms and service and all kind of page that is much need to run website perfectly and safely like robots.txt or sitemap make it best these is a professional company website , webapplication . i want the design theme of apple.com has like apple compnay website simple clear but full of animation , tranaction i want like that . make different fornt matching color of that make is possible of that make it ai agents for help user to get out of problem. 
+ 
+ you can create file , folder as per you need but you need to make the all instruction i said to you , also every things i missed out add on instruction you can also make it those to make my website to run my webapp perfectly .
+ you can use any programming lanugaues to make it success, libary of any programming , json , ajax and etc react , node js , or python libary for fast , secure . make it best and extra ordinary website which actully give me feedback have you hired an software developer of having 20+ years ?? it is too best and user friendly expirence user should say from my webapp . i know you can do . i know your potential to convert my dreams into reality replit. 
