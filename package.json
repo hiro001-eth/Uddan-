@@ -26,6 +26,7 @@
   "author": "Uddaan Consultancy",
   "license": "MIT",
   "devDependencies": {
+    "@babel/plugin-proposal-private-property-in-object": "^7.21.11",
     "concurrently": "^8.2.2",
     "nodemon": "^3.0.2"
   },

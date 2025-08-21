@@ -25,6 +25,14 @@ args = "cd frontend && npm install"
 
 [[workflows.workflow.tasks]]
 task = "shell.exec"
+args = "cd backend && npx prisma generate"
+
+[[workflows.workflow.tasks]]
+task = "shell.exec"
+args = "cd backend && npx prisma db push"
+
+[[workflows.workflow.tasks]]
+task = "shell.exec"
 args = "cd backend && npm run dev &"
 
 [[workflows.workflow.tasks]]
