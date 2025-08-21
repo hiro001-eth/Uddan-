@@ -47,7 +47,6 @@ const AdminLogin = () => {
 
       if (responseData?.mfaRequired) {
         setPendingMfa(true);
-        toast('Enter your 2FA code to continue. For development, use: 000000');
       } else {
         localStorage.setItem('adminAuthAt', String(Date.now()));
         toast.success('Login successful!');
@@ -193,7 +192,6 @@ const AdminLogin = () => {
                 </div>
                 <h2 className="text-2xl font-bold text-gray-900 mb-2">Two-Factor Authentication</h2>
                 <p className="text-gray-600">Enter your 6-digit authentication code</p>
-                <p className="text-sm text-blue-600 mt-2">Development: Use <code className="bg-blue-50 px-2 py-1 rounded">000000</code></p>
               </div>
 
               <div>
@@ -202,7 +200,7 @@ const AdminLogin = () => {
                   value={mfaCode} 
                   onChange={(e) => setMfaCode(e.target.value)} 
                   className="form-input text-center text-2xl tracking-widest" 
-                  placeholder="000000" 
+                  placeholder="Enter 6-digit code" 
                   maxLength={6}
                   autoFocus
                 />
@@ -231,22 +229,7 @@ const AdminLogin = () => {
             </form>
           )}
 
-          {/* Demo Credentials */}
-          <div className="mt-8 p-4 bg-blue-50 rounded-xl border border-blue-200">
-            <div className="flex items-start space-x-3">
-              <div className="w-6 h-6 bg-blue-100 rounded-full flex items-center justify-center flex-shrink-0 mt-0.5">
-                <Shield className="w-4 h-4 text-blue-600" />
-              </div>
-              <div>
-                <h4 className="font-semibold text-blue-900 mb-1">Demo Credentials</h4>
-                <p className="text-sm text-blue-800 mb-2">
-                  <strong>Email:</strong> admin@uddaanagencies.com<br />
-                  <strong>Password:</strong> ChangeMe_123!<br />
-                  <strong>2FA Code:</strong> 000000 (development)
-                </p>
-              </div>
-            </div>
-          </div>
+          {/* Demo credentials removed */}
         </div>
       </div>
     </div>

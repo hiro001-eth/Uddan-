@@ -8,10 +8,10 @@ export async function listJobs(params: any) {
   const whereAnd: Prisma.JobWhereInput[] = [];
   if (q) {
     whereAnd.push({ OR: [
-      { title: { contains: q, mode: 'insensitive' } },
-      { company: { contains: q, mode: 'insensitive' } },
-      { country: { contains: q, mode: 'insensitive' } },
-      { city: { contains: q, mode: 'insensitive' } },
+      { title: { contains: q } },
+      { company: { contains: q } },
+      { country: { contains: q } },
+      { city: { contains: q } },
     ] });
   }
   if (params.country) {

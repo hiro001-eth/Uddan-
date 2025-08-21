@@ -8,8 +8,8 @@ export async function listApplications(params: any) {
   const where: Prisma.ApplicationWhereInput = q
     ? {
         OR: [
-          { candidateName: { contains: q, mode: 'insensitive' } },
-          { candidateEmail: { contains: q, mode: 'insensitive' } },
+          { candidateName: { contains: q } },
+          { candidateEmail: { contains: q } },
         ],
       }
     : {};

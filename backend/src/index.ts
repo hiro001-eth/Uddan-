@@ -5,7 +5,7 @@ import cookieParser from 'cookie-parser';
 import helmet from 'helmet';
 import compression from 'compression';
 import { env } from './config/env';
-import { setupSwagger } from './config/swagger';
+import { mountSwagger } from './config/swagger';
 import routes from './routes';
 import { csrfMiddleware } from './middleware/csrf';
 import { rateLimitMiddleware } from './middleware/rateLimit';
@@ -57,7 +57,7 @@ app.use('/api', routes);
 
 // Swagger documentation
 if (env.NODE_ENV !== 'production') {
-  setupSwagger(app);
+  mountSwagger(app);
 }
 
 // Error handling middleware
@@ -115,7 +115,7 @@ async function main() {
     });
 
   } catch (error) {
-    logger.error('Failed to start server:', error);
+    logger.error({ err: error }, 'Failed to start server');
     process.exit(1);
   }
 }
@@ -131,12 +131,24 @@ async function seedAdminUser() {
       adminRole = await prisma.role.create({
         data: {
           name: 'super-admin',
-          permissions: [
-            'users:create', 'users:read', 'users:update', 'users:delete',
-            'jobs:create', 'jobs:read', 'jobs:update', 'jobs:delete',
-            'applications:create', 'applications:read', 'applications:update', 'applications:delete',
-            'admin:access', 'admin:manage'
-          ]
+          permissions: {
+            create: [
+              { permission: { connectOrCreate: { where: { name: 'users:create' }, create: { name: 'users:create', description: 'create users' } } } },
+              { permission: { connectOrCreate: { where: { name: 'users:read' }, create: { name: 'users:read', description: 'read users' } } } },
+              { permission: { connectOrCreate: { where: { name: 'users:update' }, create: { name: 'users:update', description: 'update users' } } } },
+              { permission: { connectOrCreate: { where: { name: 'users:delete' }, create: { name: 'users:delete', description: 'delete users' } } } },
+              { permission: { connectOrCreate: { where: { name: 'jobs:create' }, create: { name: 'jobs:create', description: 'create jobs' } } } },
+              { permission: { connectOrCreate: { where: { name: 'jobs:read' }, create: { name: 'jobs:read', description: 'read jobs' } } } },
+              { permission: { connectOrCreate: { where: { name: 'jobs:update' }, create: { name: 'jobs:update', description: 'update jobs' } } } },
+              { permission: { connectOrCreate: { where: { name: 'jobs:delete' }, create: { name: 'jobs:delete', description: 'delete jobs' } } } },
+              { permission: { connectOrCreate: { where: { name: 'applications:create' }, create: { name: 'applications:create', description: 'create applications' } } } },
+              { permission: { connectOrCreate: { where: { name: 'applications:read' }, create: { name: 'applications:read', description: 'read applications' } } } },
+              { permission: { connectOrCreate: { where: { name: 'applications:update' }, create: { name: 'applications:update', description: 'update applications' } } } },
+              { permission: { connectOrCreate: { where: { name: 'applications:delete' }, create: { name: 'applications:delete', description: 'delete applications' } } } },
+              { permission: { connectOrCreate: { where: { name: 'admin:access' }, create: { name: 'admin:access', description: 'admin access' } } } },
+              { permission: { connectOrCreate: { where: { name: 'admin:manage' }, create: { name: 'admin:manage', description: 'admin manage' } } } },
+            ]
+          }
         }
       });
       logger.info('Admin role created');
@@ -167,11 +179,11 @@ async function seedAdminUser() {
       logger.info('Admin user already exists');
     }
   } catch (error) {
-    logger.error('Error seeding admin user:', error);
+    logger.error({ err: error }, 'Error seeding admin user');
   }
 }
 
 main().catch((error) => {
-  logger.error('Application startup error:', error);
+  logger.error({ err: error }, 'Application startup error');
   process.exit(1);
 });

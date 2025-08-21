@@ -29,6 +29,11 @@ const envSchema = z.object({
   RATE_LIMIT_WINDOW_MINUTES: z.coerce.number().default(15),
   RATE_LIMIT_MAX: z.coerce.number().default(100),
   RENDER_EXTERNAL_URL: z.string().optional(),
+  // Optional admin seed overrides
+  ADMIN_EMAIL: z.string().email().optional(),
+  ADMIN_PASSWORD: z.string().optional(),
+  ADMIN_NAME: z.string().optional(),
+  ADMIN_PHONE: z.string().optional(),
 });
 
 const parsed = envSchema.safeParse(process.env);

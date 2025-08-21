@@ -5,7 +5,7 @@ import type { Prisma } from '@prisma/client';
 export async function listEvents(params: any) {
   const { skip, take } = getPagination(params);
   const q = typeof params.q === 'string' && params.q.length > 0 ? params.q : undefined;
-  const where: Prisma.EventWhereInput = q ? { title: { contains: q, mode: 'insensitive' } } : {};
+  const where: Prisma.EventWhereInput = q ? { title: { contains: q } } : {};
   const [items, total] = await Promise.all([
     prisma.event.findMany({
       where,

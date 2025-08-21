@@ -46,8 +46,8 @@ const ScheduleConsultation = () => {
     <div className="min-h-screen bg-gray-50">
       <section className="hero-premium py-16 text-white">
         <div className="container mx-auto px-4 text-center">
-          <h1 className="text-4xl md:text-6xl font-bold mb-4">Schedule a 1:1 Consultation</h1>
-          <p className="text-xl opacity-90 max-w-3xl mx-auto">Get personalized guidance for your overseas job journey.</p>
+          <h1 className="text-4xl md:text-6xl font-bold mb-4" style={{ color: '#3452d6be' }}>Schedule a 1:1 Consultation</h1>
+          <p className="text-xl opacity-90 max-w-3xl mx-auto" style={{ color: '#3452d6be' }}>Get personalized guidance for your overseas job journey.</p>
         </div>
       </section>
 

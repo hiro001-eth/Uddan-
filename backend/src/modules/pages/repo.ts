@@ -6,7 +6,7 @@ export async function listPages(params: any) {
   const { skip, take } = getPagination(params);
   const q = typeof params.q === 'string' && params.q.length > 0 ? params.q : undefined;
   const where: Prisma.PageWhereInput = q
-    ? { OR: [{ title: { contains: q, mode: 'insensitive' } }, { slug: { contains: q, mode: 'insensitive' } }] }
+    ? { OR: [{ title: { contains: q } }, { slug: { contains: q } }] }
     : {};
   const [items, total] = await Promise.all([
     prisma.page.findMany({

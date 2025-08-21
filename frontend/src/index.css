@@ -142,7 +142,7 @@ body {
 
 /* Container Utilities */
 .container-responsive {
-  @apply max-w-7xl mx-auto px-4 sm:px-6 lg:kg-8;
+  @apply max-w-7xl mx-auto px-4 sm:px-6 lg:px-8;
 }
 
 .section-padding {
@@ -323,4 +323,14 @@ body {
     background: #0f172a;
     color: #f1f5f9;
   }
+}
+
+/* Force headings to solid black across the app */
+.gradient-text {
+  color: #3452d6be !important;
+  background: none !important;
+  -webkit-background-clip: initial;
+  -webkit-text-fill-color: currentColor;
+  background-clip: initial;
+  animation: none;
 }

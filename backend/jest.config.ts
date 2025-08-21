@@ -10,6 +10,12 @@ const config: Config = {
   detectOpenHandles: true,
   forceExit: true,
   setupFiles: ['dotenv/config'],
+  globals: {
+    'ts-jest': {
+      useESM: true,
+      tsconfig: '<rootDir>/tsconfig.test.json',
+    },
+  },
 };
 
 export default config;

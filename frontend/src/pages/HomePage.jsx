@@ -140,7 +140,7 @@ const HomePage = () => {
   ];
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-gray-50 via-blue-50 to-indigo-50">
+    <div className="min-h-screen bg-gradient-to-br from-blue-500 via-indigo-50 to-purple-50">
       {/* Hero Section */}
       <section id="hero" className="hero-premium py-20 text-white relative">
         <div className="container mx-auto px-4 text-center">
@@ -200,7 +200,7 @@ const HomePage = () => {
       </section>
 
       {/* Features Section */}
-      <section id="features" className="py-20 bg-white">
+      <section id="features" className="py-20 bg-gradient-to-br from-white to-blue-50">
         <div className="container mx-auto px-4">
           <div className="text-center mb-16">
             <h2 className="text-4xl font-bold mb-6 gradient-text">
@@ -226,7 +226,7 @@ const HomePage = () => {
       </section>
 
       {/* Job Listings Section */}
-      <section id="jobs" className="py-20 bg-gray-50">
+      <section id="jobs" className="py-20 bg-gradient-to-br from-blue-50 to-indigo-50/30">
         <div className="container mx-auto px-4">
           <div className="text-center mb-16">
             <h2 className="text-4xl font-bold mb-6 gradient-text">Featured Jobs</h2>
@@ -300,7 +300,7 @@ const HomePage = () => {
       </section>
 
       {/* Testimonials in Home */}
-      <section id="testimonials" className="py-20 bg-white">
+      <section id="testimonials" className="py-20 bg-gradient-to-br from-white to-blue-50">
         <div className="container mx-auto px-4">
           <div className="text-center mb-16">
             <h2 className="text-4xl font-bold mb-6 gradient-text">What Our Clients Say</h2>
@@ -348,7 +348,7 @@ const HomePage = () => {
       </section>
 
       {/* CTA Section */}
-      <section id="cta" className="py-20 bg-white">
+      <section id="cta" className="py-20 bg-gradient-to-br from-white to-blue-50">
         <div className="container mx-auto px-4 text-center">
           <h2 className="text-4xl font-bold mb-6 gradient-text">Ready to Start Your Journey?</h2>
           <p className="text-xl text-gray-600 mb-8 max-w-3xl mx-auto">

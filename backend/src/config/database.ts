@@ -1,6 +1,6 @@
 
 import mongoose from 'mongoose';
-import { logger } from '../utils/logger.js';
+import { logger } from '../utils/logger';
 
 export class DatabaseConnection {
   private static instance: DatabaseConnection;
@@ -23,24 +23,18 @@ export class DatabaseConnection {
       }
 
       const mongoUri = process.env.DATABASE_URL || 'mongodb://localhost:27017/udaan_agencies';
-      
+
       await mongoose.connect(mongoUri, {
-        useNewUrlParser: true,
-        useUnifiedTopology: true,
         maxPoolSize: 10,
         serverSelectionTimeoutMS: 5000,
         socketTimeoutMS: 45000,
-        bufferCommands: false,
-        bufferMaxEntries: 0,
-        ssl: process.env.NODE_ENV === 'production',
-        sslValidate: process.env.NODE_ENV === 'production',
       });
 
       this.isConnected = true;
       logger.info('✅ Database connected successfully');
 
       mongoose.connection.on('error', (error) => {
-        logger.error('Database connection error:', error);
+        logger.error({ err: error }, 'Database connection error');
         this.isConnected = false;
       });
 
@@ -50,7 +44,7 @@ export class DatabaseConnection {
       });
 
     } catch (error) {
-      logger.error('Failed to connect to database:', error);
+      logger.error({ err: error }, 'Failed to connect to database');
       process.exit(1);
     }
   }

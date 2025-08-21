@@ -16,7 +16,7 @@ router.post('/presign-upload', requireRoles(['super-admin', 'hr-manager', 'conte
   const key = `uploads/${Date.now()}-${filename}`;
   const command = new PutObjectCommand({ Bucket: env.S3_BUCKET_NAME, Key: key, ContentType: mimeType });
   const url = await getSignedUrl(s3, command, { expiresIn: env.S3_SIGNED_URL_TTL_SECONDS });
-  await prisma.media.create({ data: { filename, mimeType, size: 0, path: key, storageBackend: 's3', uploadedBy: (req as any).user.sub, tags: [] } });
+  await prisma.media.create({ data: { filename, mimeType, size: 0, path: key, storageBackend: 's3', uploadedBy: (req as any).user.sub, tags: '' } });
   res.json({ data: { uploadUrl: url, path: key } });
 });
 

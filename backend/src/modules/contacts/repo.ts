@@ -8,9 +8,9 @@ export async function listContacts(params: any) {
   const whereAnd: Prisma.ContactWhereInput[] = [];
   if (q) {
     whereAnd.push({ OR: [
-      { fullName: { contains: q, mode: 'insensitive' } },
-      { email: { contains: q, mode: 'insensitive' } },
-      { phone: { contains: q, mode: 'insensitive' } },
+      { fullName: { contains: q } },
+      { email: { contains: q } },
+      { phone: { contains: q } },
     ] });
   }
   if (params.status) whereAnd.push({ status: String(params.status) });
