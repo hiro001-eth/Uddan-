@@ -1,4 +1,3 @@
-
 import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useForm } from 'react-hook-form';
@@ -39,13 +38,13 @@ const AdminLogin = () => {
         },
         body: JSON.stringify({ email: data.username, password: data.password })
       });
-      
+
       const responseData = await res.json();
-      
+
       if (!res.ok) {
         throw new Error(responseData.error?.message || 'Invalid credentials');
       }
-      
+
       if (responseData?.mfaRequired) {
         setPendingMfa(true);
         toast('Enter your 2FA code to continue. For development, use: 000000');
@@ -76,13 +75,13 @@ const AdminLogin = () => {
         },
         body: JSON.stringify({ code: mfaCode })
       });
-      
+
       const responseData = await res.json();
-      
+
       if (!res.ok) {
         throw new Error(responseData.error?.message || 'Invalid 2FA code');
       }
-      
+
       localStorage.setItem('adminAuthAt', String(Date.now()));
       toast.success('Login successful!');
       navigate('/admin/dashboard');
@@ -196,7 +195,7 @@ const AdminLogin = () => {
                 <p className="text-gray-600">Enter your 6-digit authentication code</p>
                 <p className="text-sm text-blue-600 mt-2">Development: Use <code className="bg-blue-50 px-2 py-1 rounded">000000</code></p>
               </div>
-              
+
               <div>
                 <input 
                   type="text" 
@@ -208,7 +207,7 @@ const AdminLogin = () => {
                   autoFocus
                 />
               </div>
-              
+
               <div className="flex gap-3">
                 <button 
                   type="button" 
