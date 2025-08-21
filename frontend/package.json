@@ -34,7 +34,7 @@
     "eject": "react-scripts eject",
     "dev": "HOST=0.0.0.0 PORT=3000 react-scripts start"
   },
-  "proxy": "http://localhost:5000",
+  "proxy": "http://0.0.0.0:5000",
   "eslintConfig": {
     "extends": [
       "react-app",
