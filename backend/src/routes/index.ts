@@ -23,6 +23,16 @@ import { requireRoles } from '../middleware/rbac';
 
 const router = Router();
 
+// Root route
+router.get('/', (_req, res) => {
+  res.json({
+    message: 'Uddaan Consultancy API',
+    version: '1.0.0',
+    status: 'running',
+    timestamp: new Date().toISOString()
+  });
+});
+
 router.use('/auth', authRoutes);
 router.use('/users', userRoutes);
 router.use('/roles', roleRoutes);
