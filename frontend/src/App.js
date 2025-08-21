@@ -18,6 +18,7 @@ import TestimonialsPage from './pages/TestimonialsPage';
 import EventsPage from './pages/EventsPage';
 import AdminLogin from './pages/AdminLogin';
 import AdminDashboard from './pages/AdminDashboard';
+import NotFoundPage from './pages/NotFoundPage'; // Assuming NotFoundPage is imported
 
 // New pages
 import PrivacyPolicy from './pages/PrivacyPolicy';
@@ -83,31 +84,32 @@ function App() {
       <ScrollToTop />
       <div className="min-h-screen bg-gray-50">
         {!isAdminRoute && <Header />}
-        
+
         <main>
           <Routes>
             <Route path="/" element={<HomePage />} />
             <Route path="/jobs" element={<JobListPage />} />
             <Route path="/jobs/:id" element={<JobDetailPage />} />
-            <Route path="/apply/:jobId" element={<ApplicationForm />} />
+            <Route path="/jobs/:id/apply" element={<ApplicationForm />} />
             <Route path="/about" element={<AboutPage />} />
             <Route path="/contact" element={<ContactPage />} />
-            {/* Testimonials still accessible if needed, but not linked from header */}
-            <Route path="/testimonials" element={<TestimonialsPage />} />
             <Route path="/events" element={<EventsPage />} />
+            <Route path="/testimonials" element={<TestimonialsPage />} />
             <Route path="/consultation" element={<ScheduleConsultation />} />
+            <Route path="/secure-admin-access-2024" element={<AdminLogin />} />
+            <Route path="/admin" element={<AdminLogin />} />
+            <Route path="/admin/dashboard" element={<RequireAdmin><AdminDashboard /></RequireAdmin>} />
             <Route path="/privacy-policy" element={<PrivacyPolicy />} />
             <Route path="/terms-of-service" element={<TermsOfService />} />
             <Route path="/cookie-policy" element={<CookiePolicy />} />
-            <Route path="/secure-admin-access-2024" element={<AdminLogin />} />
-            <Route path="/admin/dashboard" element={<RequireAdmin><AdminDashboard /></RequireAdmin>} />
+            <Route path="*" element={<NotFoundPage />} />
           </Routes>
         </main>
 
         {!isAdminRoute && <Footer />}
 
-        {/* Floating 3D Airplane on Home only */}
-        {!isAdminRoute && isHome && <FloatingAirplane />}
+        {/* Floating 3D Airplane on Home only - REMOVED AS PER USER REQUEST */}
+        {/* {!isAdminRoute && isHome && <FloatingAirplane />} */}
 
         {/* 3D Scroll to Top Button */}
         {!isAdminRoute && showScrollButton && (
@@ -123,7 +125,7 @@ function App() {
         {/* Chat Assistant disabled on admin */}
         {!isAdminRoute && <ChatAssistant />}
 
-        <Toaster 
+        <Toaster
           position="top-right"
           toastOptions={{
             duration: 4000,

@@ -140,7 +140,7 @@ const HomePage = () => {
   ];
 
   return (
-    <div className="min-h-screen">
+    <div className="min-h-screen bg-gradient-to-br from-gray-50 via-blue-50 to-indigo-50">
       {/* Hero Section */}
       <section id="hero" className="hero-premium py-20 text-white relative">
         <div className="container mx-auto px-4 text-center">
