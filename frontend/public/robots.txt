@@ -1,0 +1,22 @@
+
+User-agent: *
+Allow: /
+Allow: /jobs
+Allow: /about
+Allow: /contact
+Allow: /events
+Allow: /testimonials
+Allow: /consultation
+
+Disallow: /admin/
+Disallow: /api/
+Disallow: /backend/
+Disallow: /private/
+Disallow: /*.json$
+Disallow: /*.xml$
+
+# Sitemap location
+Sitemap: https://udaanagencies.com.np/sitemap.xml
+
+# Crawl delay for politeness
+Crawl-delay: 1
