@@ -34,7 +34,7 @@ COOKIE_SAME_SITE=lax
 CSRF_COOKIE_NAME=csrfToken
 CSRF_HEADER_NAME=x-csrf-token
 
-DATABASE_URL=postgresql://postgres:postgres@localhost:5432/uddaan?schema=public
+DATABASE_URL="file:./dev.db"
 PRISMA_LOG_LEVEL=info
 
 SEED_SUPERADMIN_EMAIL=admin@uddaanagencies.com
@@ -57,6 +57,11 @@ pkill -f concurrently 2>/dev/null || true
 echo "📦 Ensuring dependencies are installed..."
 (cd "$ROOT_DIR/backend" && npm install >/dev/null 2>&1 || true)
 (cd "$ROOT_DIR/frontend" && npm install >/dev/null 2>&1 || true)
+
+# 4.5) Always ensure database is ready for SQLite
+echo "🗄️  Ensuring database is ready..."
+(cd "$ROOT_DIR/backend" && npx prisma generate >/dev/null 2>&1 || true)
+(cd "$ROOT_DIR/backend" && npx prisma db push >/dev/null 2>&1 || true)
 
 # 5) Try to start Postgres (Docker) if available
 DB_READY=false

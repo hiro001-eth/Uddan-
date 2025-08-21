@@ -1,0 +1,171 @@
+~/workspace$ ls
+app_logo-removebg-preview.png  mongodb-project    README.md         start.sh          todo-sqlite-app-1
+attached_assets                node_modules       run_all.sh        test_result.md    uv.lock
+backend                        package.json       run.sh            tests             yarn.lock
+backend_test.py                package-lock.json  scripts           todo-mongodb-app
+frontend                       pyproject.toml     start_project.sh  todo-sqlite-app
+~/workspace$ npm run dev
+
+> uddaan-consultancy@1.0.0 dev
+> bash scripts/dev.sh
+
+\n🚀 Booting Uddaan (DB → Backend → Frontend)
+🧹 Cleaning up old dev processes (if any)...
+📦 Ensuring dependencies are installed...
+🗄️  Ensuring database is ready...
+⚠️  Docker is not running. Checking for local Postgres on 5432...
+⚠️  Database not reachable on localhost:5432. Skipping migrate/seed.
+   Start Docker (or local Postgres) and re-run if you need DB-backed APIs.
+🌐 Frontend will run on http://localhost:3001
+🔧 Backend will run on http://localhost:5000
+🚀 Starting dev servers...
+[BACKEND] 
+[BACKEND] > uddaan-backend@1.0.0 dev
+[BACKEND] > tsx watch src/index.ts
+[BACKEND] 
+[FRONTEND] 
+[FRONTEND] > uddaan-consultancy-frontend@1.0.0 start
+[FRONTEND] > HOST=0.0.0.0 DANGEROUSLY_DISABLE_HOST_CHECK=true react-scripts start
+[FRONTEND] 
+[FRONTEND] Attempting to bind to HOST environment variable: 0.0.0.0
+[FRONTEND] If this was unintentional, check that you haven't mistakenly set it in your shell.
+[FRONTEND] Learn more here: https://cra.link/advanced-config
+[FRONTEND] 
+[BACKEND] PrismaClientInitializationError: error: Error validating datasource `db`: the URL must start with the protocol `file:`.
+[BACKEND]   -->  schema.prisma:7
+[BACKEND]    | 
+[BACKEND]  6 |   provider = "sqlite"
+[BACKEND]  7 |   url      = env("DATABASE_URL")
+[BACKEND]    | 
+[BACKEND] 
+[BACKEND] Validation Error Count: 1
+[BACKEND]     at t (/home/runner/workspace/backend/node_modules/@prisma/client/runtime/library.js:112:2488)
+[BACKEND]     at async main (/home/runner/workspace/backend/src/index.ts:9:3) {
+[BACKEND]   clientVersion: '5.22.0',
+[BACKEND]   errorCode: 'P1012'
+[BACKEND] }
+[FRONTEND] Browserslist: browsers data (caniuse-lite) is 8 months old. Please run:
+[FRONTEND]   npx update-browserslist-db@latest
+[FRONTEND]   Why you should do it regularly: https://github.com/browserslist/update-db#readme
+[FRONTEND] (node:5806) [DEP_WEBPACK_DEV_SERVER_ON_AFTER_SETUP_MIDDLEWARE] DeprecationWarning: 'onAfterSetupMiddleware' option is deprecated. Please use the 'setupMiddlewares' option.
+[FRONTEND] (Use `node --trace-deprecation ...` to show where the warning was created)
+[FRONTEND] (node:5806) [DEP_WEBPACK_DEV_SERVER_ON_BEFORE_SETUP_MIDDLEWARE] DeprecationWarning: 'onBeforeSetupMiddleware' option is deprecated. Please use the 'setupMiddlewares' option.
+[FRONTEND] Starting the development server...
+[FRONTEND] 
+[FRONTEND] Failed to compile.
+[FRONTEND] 
+[FRONTEND] [eslint] 
+[FRONTEND] src/index.js
+[FRONTEND]   Line 0:  Parsing error: [BABEL] /home/runner/workspace/frontend/src/index.js: Cannot find module '@babel/plugin-proposal-private-property-in-object'
+[FRONTEND] Require stack:
+[FRONTEND] - /home/runner/workspace/frontend/node_modules/babel-preset-react-app/create.js
+[FRONTEND] - /home/runner/workspace/frontend/node_modules/babel-preset-react-app/index.js
+[FRONTEND] - /home/runner/workspace/frontend/node_modules/@babel/core/lib/config/files/module-types.js
+[FRONTEND] - /home/runner/workspace/frontend/node_modules/@babel/core/lib/config/files/configuration.js
+[FRONTEND] - /home/runner/workspace/frontend/node_modules/@babel/core/lib/config/files/index.js
+[FRONTEND] - /home/runner/workspace/frontend/node_modules/@babel/core/lib/index.js
+[FRONTEND] - /home/runner/workspace/frontend/node_modules/@rollup/plugin-babel/dist/index.js
+[FRONTEND] - /home/runner/workspace/frontend/node_modules/workbox-build/build/lib/bundle.js
+[FRONTEND] - /home/runner/workspace/frontend/node_modules/workbox-webpack-plugin/build/generate-sw.js
+[FRONTEND] - /home/runner/workspace/frontend/node_modules/workbox-webpack-plugin/build/index.js
+[FRONTEND] - /home/runner/workspace/frontend/node_modules/react-scripts/config/webpack.config.js
+[FRONTEND] - /home/runner/workspace/frontend/node_modules/react-scripts/scripts/start.js (While processing: "/home/runner/workspace/frontend/node_modules/babel-preset-react-app/prod.js")
+[FRONTEND] WARNING in [eslint] 
+[FRONTEND] src/components/FloatingAirplane.jsx
+[FRONTEND]   Line 41:11:  'easeInOutCubic' is assigned a value but never used  no-unused-vars
+[FRONTEND] 
+[FRONTEND] src/components/Header.jsx
+[FRONTEND]   Line 1:27:  'useEffect' is defined but never used  no-unused-vars
+[FRONTEND] 
+[FRONTEND] src/components/admin/JobFormModal.jsx
+[FRONTEND]   Line 3:13:  'Upload' is defined but never used  no-unused-vars
+[FRONTEND] 
+[FRONTEND] src/pages/AboutPage.jsx
+[FRONTEND]   Line 2:10:  'Users' is defined but never used  no-unused-vars
+[FRONTEND] 
+[FRONTEND] src/pages/AdminDashboard.jsx
+[FRONTEND]   Line 6:3:    'BarChart' is defined but never used                                                                                                                                                                                                                      no-unused-vars
+[FRONTEND]   Line 6:13:   'Bar' is defined but never used                                                                                                                                                                                                                           no-unused-vars
+[FRONTEND]   Line 6:56:   'Legend' is defined but never used                                                                                                                                                                                                                        no-unused-vars
+[FRONTEND]   Line 7:3:    'LineChart' is defined but never used                                                                                                                                                                                                                     no-unused-vars
+[FRONTEND]   Line 7:14:   'Line' is defined but never used                                                                                                                                                                                                                          no-unused-vars
+[FRONTEND]   Line 10:57:  'Shield' is defined but never used                                                                                                                                                                                                                        no-unused-vars
+[FRONTEND]   Line 11:3:   'Upload' is defined but never used                                                                                                                                                                                                                        no-unused-vars
+[FRONTEND]   Line 11:11:  'Download' is defined but never used                                                                                                                                                                                                                      no-unused-vars
+[FRONTEND]   Line 11:26:  'EyeOff' is defined but never used                                                                                                                                                                                                                        no-unused-vars
+[FRONTEND]   Line 11:62:  'Filter' is defined but never used                                                                                                                                                                                                                        no-unused-vars
+[FRONTEND]   Line 12:48:  'Clock' is defined but never used                                                                                                                                                                                                                         no-unused-vars
+[FRONTEND]   Line 12:55:  'UserPlus' is defined but never used                                                                                                                                                                                                                      no-unused-vars
+[FRONTEND]   Line 13:3:   'Database' is defined but never used                                                                                                                                                                                                                      no-unused-vars
+[FRONTEND]   Line 13:22:  'Globe' is defined but never used                                                                                                                                                                                                                         no-unused-vars
+[FRONTEND]   Line 13:29:  'Lock' is defined but never used                                                                                                                                                                                                                          no-unused-vars
+[FRONTEND]   Line 13:35:  'Key' is defined but never used                                                                                                                                                                                                                           no-unused-vars
+[FRONTEND]   Line 13:57:  'ChevronDown' is defined but never used                                                                                                                                                                                                                   no-unused-vars
+[FRONTEND]   Line 14:41:  'Phone' is defined but never used                                                                                                                                                                                                                         no-unused-vars
+[FRONTEND]   Line 14:48:  'MapPin' is defined but never used                                                                                                                                                                                                                        no-unused-vars
+[FRONTEND]   Line 14:56:  'Save' is defined but never used                                                                                                                                                                                                                          no-unused-vars
+[FRONTEND]   Line 14:62:  'Camera' is defined but never used                                                                                                                                                                                                                        no-unused-vars
+[FRONTEND]   Line 15:3:   'Zap' is defined but never used                                                                                                                                                                                                                           no-unused-vars
+[FRONTEND]   Line 15:8:   'TrendingUp' is defined but never used                                                                                                                                                                                                                    no-unused-vars
+[FRONTEND]   Line 15:20:  'BarChart3' is defined but never used                                                                                                                                                                                                                     no-unused-vars
+[FRONTEND]   Line 15:43:  'PieChartIcon' is defined but never used                                                                                                                                                                                                                  no-unused-vars
+[FRONTEND]   Line 15:57:  'Target' is defined but never used                                                                                                                                                                                                                        no-unused-vars
+[FRONTEND]   Line 40:19:  'setFilters' is assigned a value but never used                                                                                                                                                                                                           no-unused-vars
+[FRONTEND]   Line 71:6:   React Hook useEffect has missing dependencies: 'checkAuth' and 'fetchData'. Either include them or remove the dependency array. Mutable values like 'pagination.current' aren't valid dependencies because mutating them doesn't re-render the component  react-hooks/exhaustive-deps
+[FRONTEND]   Line 99:6:   React Hook useEffect has a missing dependency: 'checkAuth'. Either include it or remove the dependency array                                                                                                                                              react-hooks/exhaustive-deps
+[FRONTEND] 
+[FRONTEND] src/pages/ApplicationForm.jsx
+[FRONTEND]   Line 14:10:  'formData' is assigned a value but never used         no-unused-vars
+[FRONTEND]   Line 22:10:  'submitStatus' is assigned a value but never used     no-unused-vars
+[FRONTEND]   Line 22:24:  'setSubmitStatus' is assigned a value but never used  no-unused-vars
+[FRONTEND] 
+[FRONTEND] src/pages/ContactPage.jsx
+[FRONTEND]   Line 5:38:  'MessageSquare' is defined but never used  no-unused-vars
+[FRONTEND] 
+[FRONTEND] src/pages/EventsPage.jsx
+[FRONTEND]   Line 2:56:  'Filter' is defined but never used  no-unused-vars
+[FRONTEND] 
+[FRONTEND] src/pages/HomePage.jsx
+[FRONTEND]   Line 28:6:  React Hook useEffect has a missing dependency: 'fetchJobs'. Either include it or remove the dependency array  react-hooks/exhaustive-deps
+[FRONTEND]   Line 79:9:  'handleFilterChange' is assigned a value but never used                                                       no-unused-vars
+[FRONTEND] 
+[FRONTEND] src/pages/JobListPage.jsx
+[FRONTEND]   Line 3:26:  'MapPin' is defined but never used      no-unused-vars
+[FRONTEND]   Line 3:34:  'Building' is defined but never used    no-unused-vars
+[FRONTEND]   Line 3:44:  'DollarSign' is defined but never used  no-unused-vars
+[FRONTEND]   Line 3:56:  'Calendar' is defined but never used    no-unused-vars
+[FRONTEND]   Line 3:66:  'Users' is defined but never used       no-unused-vars
+[FRONTEND] 
+[FRONTEND] src/pages/TestimonialsPage.jsx
+[FRONTEND]   Line 2:23:  'Filter' is defined but never used  no-unused-vars
+[FRONTEND] 
+[FRONTEND] ERROR in [eslint] 
+[FRONTEND] src/index.js
+[FRONTEND]   Line 0:  Parsing error: [BABEL] /home/runner/workspace/frontend/src/index.js: Cannot find module '@babel/plugin-proposal-private-property-in-object'
+[FRONTEND] Require stack:
+[FRONTEND] - /home/runner/workspace/frontend/node_modules/babel-preset-react-app/create.js
+[FRONTEND] - /home/runner/workspace/frontend/node_modules/babel-preset-react-app/index.js
+[FRONTEND] - /home/runner/workspace/frontend/node_modules/@babel/core/lib/config/files/module-types.js
+[FRONTEND] - /home/runner/workspace/frontend/node_modules/@babel/core/lib/config/files/configuration.js
+[FRONTEND] - /home/runner/workspace/frontend/node_modules/@babel/core/lib/config/files/index.js
+[FRONTEND] - /home/runner/workspace/frontend/node_modules/@babel/core/lib/index.js
+[FRONTEND] - /home/runner/workspace/frontend/node_modules/@rollup/plugin-babel/dist/index.js
+[FRONTEND] - /home/runner/workspace/frontend/node_modules/workbox-build/build/lib/bundle.js
+[FRONTEND] - /home/runner/workspace/frontend/node_modules/workbox-webpack-plugin/build/generate-sw.js
+[FRONTEND] - /home/runner/workspace/frontend/node_modules/workbox-webpack-plugin/build/index.js
+[FRONTEND] - /home/runner/workspace/frontend/node_modules/react-scripts/config/webpack.config.js
+[FRONTEND] - /home/runner/workspace/frontend/node_modules/react-scripts/scripts/start.js (While processing: "/home/runner/workspace/frontend/node_modules/babel-preset-react-app/prod.js")
+[FRONTEND] 
+[FRONTEND] webpack compiled with 1 error and 1 warning
+[FRONTEND] Proxy error: Could not proxy request /api/jobs?limit=8&featured=true from 72102963-b2c7-44ce-b12a-f4a281615bca-00-ssmqebaeexgw.sisko.replit.dev to http://0.0.0.0:5000.
+[FRONTEND] See https://nodejs.org/api/errors.html#errors_common_system_errors for more information (ECONNREFUSED).
+[FRONTEND] 
+[FRONTEND] Proxy error: Could not proxy request /api/jobs?limit=8&featured=true from 72102963-b2c7-44ce-b12a-f4a281615bca-00-ssmqebaeexgw.sisko.replit.dev to http://0.0.0.0:5000.
+[FRONTEND] See https://nodejs.org/api/errors.html#errors_common_system_errors for more information (ECONNREFUSED).
+[FRONTEND] 
+[FRONTEND] Proxy error: Could not proxy request /api/jobs?limit=50 from 72102963-b2c7-44ce-b12a-f4a281615bca-00-ssmqebaeexgw.sisko.replit.dev to http://0.0.0.0:5000.
+[FRONTEND] See https://nodejs.org/api/errors.html#errors_common_system_errors for more information (ECONNREFUSED).
+[FRONTEND] 
+[FRONTEND] Proxy error: Could not proxy request /api/jobs?limit=50 from 72102963-b2c7-44ce-b12a-f4a281615bca-00-ssmqebaeexgw.sisko.replit.dev to http://0.0.0.0:5000.
+[FRONTEND] See https://nodejs.org/api/errors.html#errors_common_system_errors for more information (ECONNREFUSED).
+[FRONTEND] 

@@ -5,15 +5,15 @@
   "main": "index.js",
   "scripts": {
     "dev": "bash scripts/dev.sh",
+    "setup": "bash scripts/setup.sh",
     "backend:dev": "cd backend && npm run dev",
-    "frontend:dev": "cd frontend && npm run dev",
+    "frontend:dev": "cd frontend && npm run dev", 
     "db:up": "docker compose -f backend/docker-compose.yml up -d db",
     "prisma:generate": "cd backend && npm run prisma:generate",
     "prisma:migrate": "cd backend && npm run prisma:migrate",
     "seed": "cd backend && npm run seed",
     "build": "cd frontend && npm run build",
     "install:all": "npm install && cd backend && npm install && cd ../frontend && npm install",
-    "setup": "./start.sh",
     "health": "curl -f http://localhost:5000/health || echo 'Backend not running'",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
