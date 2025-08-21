@@ -25,11 +25,7 @@ args = "cd frontend && npm install"
 
 [[workflows.workflow.tasks]]
 task = "shell.exec"
-args = "cd backend && npm install @babel/plugin-transform-private-property-in-object --save-dev"
-
-[[workflows.workflow.tasks]]
-task = "shell.exec"
-args = "cd frontend && npm install @babel/plugin-transform-private-property-in-object --save-dev"
+args = "cd frontend && npm install @babel/plugin-proposal-private-property-in-object --save-dev"
 
 [[workflows.workflow.tasks]]
 task = "shell.exec"
@@ -38,6 +34,10 @@ args = "cd backend && npx prisma generate"
 [[workflows.workflow.tasks]]
 task = "shell.exec"
 args = "cd backend && npx prisma db push"
+
+[[workflows.workflow.tasks]]
+task = "shell.exec"
+args = "cd backend && npm run seed"
 
 [[workflows.workflow.tasks]]
 task = "shell.exec"
